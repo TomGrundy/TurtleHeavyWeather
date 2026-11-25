@@ -12,7 +12,7 @@ use crate::{FetchContext, SourceError, SourceOutput, WeatherSource};
 pub const DEFAULT_OPEN_METEO_BASE_URL: &str = "https://api.open-meteo.com";
 pub const DEFAULT_OPEN_METEO_BATCH_SIZE: usize = 50;
 
-const HOURLY_FIELDS: &str = "temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,relative_humidity_2m";
+const HOURLY_FIELDS: &str = "temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,relative_humidity_2m,shortwave_radiation";
 
 /// Meteorological NWP model exposed through Open-Meteo's `/v1/forecast` API.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -307,6 +307,8 @@ struct OpenMeteoHourly {
     wind_speed_10m: Vec<Option<f64>>,
     #[serde(default)]
     relative_humidity_2m: Vec<Option<f64>>,
+    #[serde(default)]
+    shortwave_radiation: Vec<Option<f64>>,
 }
 
 fn parse_hourly_points(hourly: &OpenMeteoHourly) -> Vec<WeatherPoint> {
@@ -327,6 +329,7 @@ fn parse_hourly_points(hourly: &OpenMeteoHourly) -> Vec<WeatherPoint> {
             rain_mm: hourly.precipitation.get(idx).copied().flatten(),
             wind_kmh: hourly.wind_speed_10m.get(idx).copied().flatten(),
             humidity_pct: hourly.relative_humidity_2m.get(idx).copied().flatten(),
+            solar_wm2: hourly.shortwave_radiation.get(idx).copied().flatten(),
             summary: None,
         };
         ensure_feels_like(&mut point);

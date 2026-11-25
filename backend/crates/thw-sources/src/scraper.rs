@@ -719,6 +719,7 @@ pub fn parse_bom_obs_html(
                 rain_mm,
                 wind_kmh,
                 humidity_pct,
+                solar_wm2: None,
                 summary: Some(format!("BOM HTML table observation ({station_name})")),
             };
             ensure_feels_like(&mut current);

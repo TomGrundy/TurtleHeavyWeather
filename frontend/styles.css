@@ -292,6 +292,21 @@ body {
   width: 100%;
   height: auto;
   display: block;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.chart-tooltip-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  margin-bottom: 0.45rem;
+  border-radius: 8px;
+  background: rgba(27, 40, 66, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  font-size: 0.85rem;
 }
 
 .chart-grid {

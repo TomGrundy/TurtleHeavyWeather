@@ -13,6 +13,14 @@ pub fn compute_apparent_temp_c(temp_c: f64, rel_humidity_pct: f64, wind_kmh: f64
     (at * 10.0).round() / 10.0
 }
 
+/// Estimates outdoor sun-exposed Apparent Temperature by adding a bounded
+/// Steadman solar radiation load (`+ 0.008 * shortwave_radiation_wm2`, capped
+/// at +8.0°C above shade apparent temperature).
+pub fn compute_outdoor_sun_apparent_temp_c(shade_at_c: f64, shortwave_radiation_wm2: f64) -> f64 {
+    let solar_boost = (shortwave_radiation_wm2.max(0.0) * 0.008).min(8.0);
+    ((shade_at_c + solar_boost) * 10.0).round() / 10.0
+}
+
 /// Fills `feels_like_c` using `compute_apparent_temp_c` if missing and sufficient
 /// inputs are present, marking `feels_like_is_derived = true`.
 pub fn ensure_feels_like(point: &mut WeatherPoint) {
@@ -28,6 +36,19 @@ pub fn ensure_feels_like(point: &mut WeatherPoint) {
     }
 }
 
+/// Standardizes a `WeatherPoint`'s `feels_like_c` to BOM's Australian Steadman
+/// formula whenever `temp_c` and `humidity_pct` are available, eliminating
+/// Heat-Index / Wind-Chill drift across US-centric APIs.
+pub fn normalize_feels_like_bom_steadman(point: &mut WeatherPoint) {
+    if let (Some(temp_c), Some(rh)) = (point.temp_c, point.humidity_pct) {
+        let wind = point.wind_kmh.unwrap_or(0.0);
+        point.feels_like_c = Some(compute_apparent_temp_c(temp_c, rh, wind));
+        point.feels_like_is_derived = true;
+    } else {
+        ensure_feels_like(point);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -35,15 +56,18 @@ mod tests {
 
     #[test]
     fn bom_steadman_apparent_temp_matches_reference() {
-        // At 25°C, 60% RH, 18 km/h (5 m/s):
-        // e = 0.6 * 6.105 * exp(17.27 * 25 / 262.7) ~= 18.99
-        // AT = 25 + 0.33*18.99 - 0.70*5 - 4.00 ~= 23.8°C
         let at = compute_apparent_temp_c(25.0, 60.0, 18.0);
         assert!((at - 23.8).abs() <= 0.15, "got {at}");
 
-        // Hot humid calm day: 32°C, 75% RH, 3.6 km/h (1 m/s) -> hotter than air temp
         let hot = compute_apparent_temp_c(32.0, 75.0, 3.6);
         assert!(hot > 35.0, "expected muggy feels-like > 35, got {hot}");
+    }
+
+    #[test]
+    fn solar_boost_increases_apparent_temp_up_to_cap() {
+        assert_eq!(compute_outdoor_sun_apparent_temp_c(24.0, 0.0), 24.0);
+        assert_eq!(compute_outdoor_sun_apparent_temp_c(24.0, 500.0), 28.0);
+        assert_eq!(compute_outdoor_sun_apparent_temp_c(24.0, 1500.0), 32.0);
     }
 
     #[test]
@@ -57,6 +81,7 @@ mod tests {
             rain_mm: None,
             wind_kmh: Some(15.0),
             humidity_pct: Some(55.0),
+            solar_wm2: None,
             summary: None,
         };
         ensure_feels_like(&mut native);

@@ -59,6 +59,8 @@ pub struct WeatherPoint {
     pub rain_mm: Option<f64>,
     pub wind_kmh: Option<f64>,
     pub humidity_pct: Option<f64>,
+    #[serde(default)]
+    pub solar_wm2: Option<f64>,
     pub summary: Option<String>,
 }
 
@@ -114,6 +116,8 @@ pub struct TempSpread {
 pub struct BestEstimate {
     pub valid_at: DateTime<Utc>,
     pub feels_like_c: f64,
+    #[serde(default)]
+    pub feels_like_sun_c: Option<f64>,
     pub temp_c: f64,
     pub rain: RainSummary,
     pub confidence: ConfidenceLevel,
@@ -125,6 +129,8 @@ pub struct BestEstimate {
 pub struct HourlyEstimate {
     pub valid_at: DateTime<Utc>,
     pub feels_like_c: f64,
+    #[serde(default)]
+    pub feels_like_sun_c: Option<f64>,
     pub temp_c: f64,
     pub rain_prob_pct: f64,
     pub rain_mm_expected: f64,

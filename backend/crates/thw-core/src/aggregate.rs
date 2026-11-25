@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use chrono::{DateTime, Duration, Timelike, Utc};
 
+use crate::feels_like::{compute_outdoor_sun_apparent_temp_c, normalize_feels_like_bom_steadman};
 use crate::models::{
     BestEstimate, ConfidenceLevel, HourlyEstimate, MeshNode, NodeWeatherBundle, RainSummary,
     RainVerdict, SourceKind, SourceReport, TempSpread, WeatherPoint,
@@ -19,10 +20,12 @@ impl Default for AggregationConfig {
     fn default() -> Self {
         let mut source_weights = HashMap::new();
         source_weights.insert("bom_obs_json".to_string(), 1.5);
+        source_weights.insert("bom_ftp_obs".to_string(), 1.5);
         source_weights.insert("bom_ftp_xml".to_string(), 1.3);
         source_weights.insert("bom_web_api".to_string(), 1.25);
         source_weights.insert("open_meteo_bom_access".to_string(), 1.2);
         source_weights.insert("open_meteo_ecmwf".to_string(), 1.15);
+        source_weights.insert("open_meteo_icon".to_string(), 1.05);
         source_weights.insert("met_no".to_string(), 1.05);
         source_weights.insert("open_meteo_gfs".to_string(), 0.95);
         source_weights.insert("weatherapi".to_string(), 0.95);
@@ -111,9 +114,22 @@ pub fn aggregate_node_bundle(
     now: DateTime<Utc>,
     cfg: &AggregationConfig,
 ) -> Option<NodeWeatherBundle> {
-    let fresh: Vec<&SourceReport> = reports.iter().filter(|r| is_fresh(r, now, cfg)).collect();
+    let mut normalized_reports: Vec<SourceReport> = reports.to_vec();
+    for r in &mut normalized_reports {
+        if r.kind != SourceKind::Observation {
+            normalize_feels_like_bom_steadman(&mut r.current);
+            for pt in &mut r.hourly {
+                normalize_feels_like_bom_steadman(pt);
+            }
+        }
+    }
+
+    let fresh: Vec<&SourceReport> = normalized_reports
+        .iter()
+        .filter(|r| is_fresh(r, now, cfg))
+        .collect();
     let active: Vec<&SourceReport> = if fresh.is_empty() {
-        reports.iter().collect()
+        normalized_reports.iter().collect()
     } else {
         fresh
     };
@@ -175,9 +191,19 @@ pub fn aggregate_node_bundle(
         ConfidenceLevel::Low
     };
 
+    let solar_wm2 = weighted_mean(
+        active
+            .iter()
+            .filter_map(|r| r.current.solar_wm2.map(|s| (s, cfg.weight_for(r)))),
+    );
+    let feels_like_sun_c = solar_wm2
+        .filter(|s| *s >= 50.0)
+        .map(|s| compute_outdoor_sun_apparent_temp_c(feels_like_c, s));
+
     let current_best_estimate = BestEstimate {
         valid_at: now,
         feels_like_c,
+        feels_like_sun_c,
         temp_c,
         rain: classify_rain(rain_prob_pct, expected_mm, is_raining_now),
         confidence,
@@ -220,10 +246,16 @@ pub fn aggregate_node_bundle(
             .unwrap_or(0.0);
             let rmm = weighted_mean(pts.iter().filter_map(|(p, w)| p.rain_mm.map(|v| (v, *w))))
                 .unwrap_or(0.0);
+            let h_solar =
+                weighted_mean(pts.iter().filter_map(|(p, w)| p.solar_wm2.map(|v| (v, *w))));
+            let h_sun_fl = h_solar
+                .filter(|s| *s >= 50.0)
+                .map(|s| compute_outdoor_sun_apparent_temp_c(fl, s));
 
             Some(HourlyEstimate {
                 valid_at,
                 feels_like_c: fl,
+                feels_like_sun_c: h_sun_fl,
                 temp_c: t,
                 rain_prob_pct: rp.clamp(0.0, 100.0).round(),
                 rain_mm_expected: (rmm.max(0.0) * 10.0).round() / 10.0,
@@ -285,6 +317,7 @@ mod tests {
                     rain_mm: Some(0.0),
                     wind_kmh: Some(15.0),
                     humidity_pct: Some(60.0),
+                    solar_wm2: None,
                     summary: None,
                 },
                 hourly: vec![],
@@ -305,6 +338,7 @@ mod tests {
                     rain_mm: Some(1.4),
                     wind_kmh: Some(18.0),
                     humidity_pct: Some(65.0),
+                    solar_wm2: None,
                     summary: None,
                 },
                 hourly: vec![],
@@ -325,6 +359,7 @@ mod tests {
                     rain_mm: Some(0.8),
                     wind_kmh: Some(14.0),
                     humidity_pct: Some(62.0),
+                    solar_wm2: None,
                     summary: None,
                 },
                 hourly: vec![],
@@ -366,6 +401,7 @@ mod tests {
                 rain_mm: Some(1.2),
                 wind_kmh: Some(20.0),
                 humidity_pct: Some(88.0),
+                solar_wm2: None,
                 summary: None,
             },
             hourly: vec![],

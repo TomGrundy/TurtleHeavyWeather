@@ -55,6 +55,7 @@ fn test_state() -> (tempfile::TempDir, AppState) {
             rain_mm: Some(0.0),
             wind_kmh: Some(14.0),
             humidity_pct: Some(55.0),
+            solar_wm2: None,
             summary: Some("Sunny".into()),
         },
         hourly: vec![],

@@ -8,7 +8,7 @@ use thw_core::{
     aggregate_node_bundle, evaluate_regression, AggregationConfig, MeshNode, NodeWeatherBundle,
     RegressionForecastInput, RegressionSummary, SourceReport,
 };
-use thw_sources::bom::{BomFtpXmlSource, BomObsJsonSource, BomWebApiSource};
+use thw_sources::bom::{BomFtpObsSource, BomFtpXmlSource, BomObsJsonSource, BomWebApiSource};
 use thw_sources::keyed::{
     OpenWeatherMapSource, PirateWeatherSource, TomorrowIoSource, WeatherApiSource,
 };
@@ -48,6 +48,7 @@ pub struct SyncReport {
 pub fn default_sources() -> Vec<Box<dyn WeatherSource>> {
     vec![
         Box::new(BomObsJsonSource::default()),
+        Box::new(BomFtpObsSource::default()),
         Box::new(BomFtpXmlSource::default()),
         Box::new(BomWebApiSource::new()),
         Box::new(OpenMeteoSource::new(OpenMeteoModel::BomAccessGlobal)),
@@ -196,14 +197,32 @@ pub async fn run_sync_cycle_with_sources(
     }
 
     let now = Utc::now();
+    // Auto-tune aggregation weights using prior 7-day Feels-Like + Rain regression scores if available.
+    let mut tuned_cfg = agg_cfg.clone();
+    if let Ok(Some(prior_reg)) = store.load_regression_summary() {
+        for (src_id, learned_w) in prior_reg.suggested_weights {
+            if learned_w > 0.0 {
+                let base_w = tuned_cfg
+                    .source_weights
+                    .get(&src_id)
+                    .copied()
+                    .unwrap_or(1.0);
+                // Blend 50% prior baseline + 50% scaled learned weight for stability.
+                tuned_cfg
+                    .source_weights
+                    .insert(src_id, 0.5 * base_w + 0.5 * (learned_w * 5.0));
+            }
+        }
+    }
+
     let mut bundles = Vec::new();
     for node in nodes {
         let Some(node_reports) = reports_by_node.get(&node.node_id) else {
             continue;
         };
         store.upsert_source_reports(&node.node_id, node_reports)?;
-        if let Some(bundle) = aggregate_node_bundle(node, node_reports, now, agg_cfg) {
-            store.upsert_aggregate_bundle(&bundle, "v1-static")?;
+        if let Some(bundle) = aggregate_node_bundle(node, node_reports, now, &tuned_cfg) {
+            store.upsert_aggregate_bundle(&bundle, "v2-tuned")?;
             bundles.push(bundle);
         }
     }

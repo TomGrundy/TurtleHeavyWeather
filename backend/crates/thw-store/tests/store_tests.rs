@@ -35,6 +35,7 @@ fn sample_bundle(node: MeshNode, generated_at: DateTime<Utc>) -> NodeWeatherBund
         current_best_estimate: BestEstimate {
             valid_at: generated_at,
             feels_like_c: 21.4,
+            feels_like_sun_c: None,
             temp_c: 22.8,
             rain: RainSummary {
                 verdict: RainVerdict::Possible,
@@ -56,6 +57,7 @@ fn sample_bundle(node: MeshNode, generated_at: DateTime<Utc>) -> NodeWeatherBund
             HourlyEstimate {
                 valid_at: generated_at + Duration::hours(1),
                 feels_like_c: 21.0,
+                feels_like_sun_c: None,
                 temp_c: 22.2,
                 rain_prob_pct: 40.0,
                 rain_mm_expected: 0.1,
@@ -63,6 +65,7 @@ fn sample_bundle(node: MeshNode, generated_at: DateTime<Utc>) -> NodeWeatherBund
             HourlyEstimate {
                 valid_at: generated_at + Duration::hours(6),
                 feels_like_c: 18.5,
+                feels_like_sun_c: None,
                 temp_c: 19.3,
                 rain_prob_pct: 70.0,
                 rain_mm_expected: 1.4,
@@ -83,6 +86,7 @@ fn sample_bundle(node: MeshNode, generated_at: DateTime<Utc>) -> NodeWeatherBund
                 rain_mm: Some(0.0),
                 wind_kmh: Some(15.0),
                 humidity_pct: Some(62.0),
+                solar_wm2: None,
                 summary: Some("Partly cloudy".to_string()),
             },
             hourly: vec![WeatherPoint {
@@ -94,6 +98,7 @@ fn sample_bundle(node: MeshNode, generated_at: DateTime<Utc>) -> NodeWeatherBund
                 rain_mm: Some(0.1),
                 wind_kmh: Some(16.0),
                 humidity_pct: Some(64.0),
+                solar_wm2: None,
                 summary: None,
             }],
             source_url: Some("https://api.open-meteo.com/".to_string()),
@@ -181,6 +186,7 @@ fn node_and_source_report_upserts_are_idempotent() {
             rain_mm: Some(0.0),
             wind_kmh: Some(14.0),
             humidity_pct: Some(60.0),
+            solar_wm2: None,
             summary: Some("Fair".to_string()),
         },
         hourly: vec![
@@ -193,6 +199,7 @@ fn node_and_source_report_upserts_are_idempotent() {
                 rain_mm: Some(0.1),
                 wind_kmh: Some(15.0),
                 humidity_pct: Some(61.0),
+                solar_wm2: None,
                 summary: None,
             },
             WeatherPoint {
@@ -204,6 +211,7 @@ fn node_and_source_report_upserts_are_idempotent() {
                 rain_mm: Some(1.2),
                 wind_kmh: Some(18.0),
                 humidity_pct: Some(75.0),
+                solar_wm2: None,
                 summary: Some("Showers".to_string()),
             },
         ],
@@ -314,6 +322,7 @@ fn observation_upserts_and_retention_pruning_boundaries() {
             rain_mm: Some(0.0),
             wind_kmh: Some(20.0),
             humidity_pct: Some(70.0),
+            solar_wm2: None,
             summary: None,
         },
         hourly: vec![
@@ -326,6 +335,7 @@ fn observation_upserts_and_retention_pruning_boundaries() {
                 rain_mm: Some(0.0),
                 wind_kmh: Some(18.0),
                 humidity_pct: Some(68.0),
+                solar_wm2: None,
                 summary: None,
             },
             WeatherPoint {
@@ -337,6 +347,7 @@ fn observation_upserts_and_retention_pruning_boundaries() {
                 rain_mm: Some(0.4),
                 wind_kmh: Some(12.0),
                 humidity_pct: Some(65.0),
+                solar_wm2: None,
                 summary: None,
             },
             WeatherPoint {
@@ -348,6 +359,7 @@ fn observation_upserts_and_retention_pruning_boundaries() {
                 rain_mm: Some(0.0),
                 wind_kmh: Some(10.0),
                 humidity_pct: Some(55.0),
+                solar_wm2: None,
                 summary: None,
             },
         ],
@@ -364,6 +376,7 @@ fn observation_upserts_and_retention_pruning_boundaries() {
         HourlyEstimate {
             valid_at: exact_boundary,
             feels_like_c: 11.2,
+            feels_like_sun_c: None,
             temp_c: 13.1,
             rain_prob_pct: 20.0,
             rain_mm_expected: 0.0,
@@ -371,6 +384,7 @@ fn observation_upserts_and_retention_pruning_boundaries() {
         HourlyEstimate {
             valid_at: future,
             feels_like_c: 17.0,
+            feels_like_sun_c: None,
             temp_c: 18.2,
             rain_prob_pct: 10.0,
             rain_mm_expected: 0.0,

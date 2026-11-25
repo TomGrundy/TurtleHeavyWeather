@@ -26,58 +26,75 @@ fn month_abbr(m: u32) -> &'static str {
     }
 }
 
-/// Formats `dt` as `HH:MM` in the browser's local timezone.
+#[cfg(target_arch = "wasm32")]
+fn to_12h(hour24: u32) -> (u32, &'static str) {
+    let ampm = if hour24 < 12 { "AM" } else { "PM" };
+    let h12 = match hour24 % 12 {
+        0 => 12,
+        h => h,
+    };
+    (h12, ampm)
+}
+
+/// Formats `dt` as `h:mm AM/PM` in the browser's local timezone.
 pub fn format_local_hhmm(dt: DateTime<Utc>) -> String {
     #[cfg(target_arch = "wasm32")]
     {
         let d = js_date(dt);
-        format!("{:02}:{:02}", d.get_hours(), d.get_minutes())
-    }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        dt.with_timezone(&chrono::Local).format("%H:%M").to_string()
-    }
-}
-
-/// Formats `dt` as `DD Mon HH:MM` in the browser's local timezone.
-pub fn format_local_short(dt: DateTime<Utc>) -> String {
-    #[cfg(target_arch = "wasm32")]
-    {
-        let d = js_date(dt);
-        format!(
-            "{:02} {} {:02}:{:02}",
-            d.get_date(),
-            month_abbr(d.get_month()),
-            d.get_hours(),
-            d.get_minutes()
-        )
+        let (h12, ampm) = to_12h(d.get_hours());
+        format!("{}:{:02} {}", h12, d.get_minutes(), ampm)
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
         dt.with_timezone(&chrono::Local)
-            .format("%d %b %H:%M")
+            .format("%-I:%M %p")
             .to_string()
     }
 }
 
-/// Formats `dt` as `DD Mon YYYY HH:MM` in the browser's local timezone.
-pub fn format_local_full(dt: DateTime<Utc>) -> String {
+/// Formats `dt` as `DD Mon h:mm AM/PM` in the browser's local timezone.
+pub fn format_local_short(dt: DateTime<Utc>) -> String {
     #[cfg(target_arch = "wasm32")]
     {
         let d = js_date(dt);
+        let (h12, ampm) = to_12h(d.get_hours());
         format!(
-            "{:02} {} {} {:02}:{:02}",
+            "{:02} {} {}:{:02} {}",
             d.get_date(),
             month_abbr(d.get_month()),
-            d.get_full_year(),
-            d.get_hours(),
-            d.get_minutes()
+            h12,
+            d.get_minutes(),
+            ampm
         )
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
         dt.with_timezone(&chrono::Local)
-            .format("%d %b %Y %H:%M")
+            .format("%d %b %-I:%M %p")
+            .to_string()
+    }
+}
+
+/// Formats `dt` as `DD Mon YYYY h:mm AM/PM` in the browser's local timezone.
+pub fn format_local_full(dt: DateTime<Utc>) -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let d = js_date(dt);
+        let (h12, ampm) = to_12h(d.get_hours());
+        format!(
+            "{:02} {} {} {}:{:02} {}",
+            d.get_date(),
+            month_abbr(d.get_month()),
+            d.get_full_year(),
+            h12,
+            d.get_minutes(),
+            ampm
+        )
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        dt.with_timezone(&chrono::Local)
+            .format("%d %b %Y %-I:%M %p")
             .to_string()
     }
 }

@@ -1,6 +1,6 @@
 use chrono::{TimeZone, Utc};
 use thw_core::{MeshNode, SourceKind, StateCode};
-use thw_sources::bom::{parse_amoc_xml, BomObsJsonSource, BomWebApiSource};
+use thw_sources::bom::{parse_amoc_xml, parse_bom_obs_xml, BomObsJsonSource, BomWebApiSource};
 use thw_sources::{FetchContext, WeatherSource};
 use wiremock::matchers::{method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -173,4 +173,32 @@ async fn bom_web_api_fetches_hourly_and_trips_circuit_breaker_on_repeated_failur
     assert_eq!(out.reports.len(), 1);
     assert_eq!(out.reports[0].1.current.temp_c, Some(25.0));
     assert_eq!(out.reports[0].1.current.rain_prob_pct, Some(40.0));
+}
+
+#[test]
+fn parse_bom_obs_xml_extracts_apparent_temp_and_tier1_observation() {
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<product>
+  <observations>
+    <station wmo-id="94768" description="Sydney (Observatory Hill)">
+      <period index="0" time-utc="2026-11-25T23:00:00Z">
+        <level index="0" type="surface">
+          <element type="air_temperature">22.4</element>
+          <element type="apparent_temp">21.6</element>
+          <element type="rel-humidity">61</element>
+          <element type="wind_spd_kmh">15</element>
+          <element type="rainfall">0.4</element>
+        </level>
+      </period>
+    </station>
+  </observations>
+</product>"#;
+
+    let fetched_at = Utc::now();
+    let out = parse_bom_obs_xml(xml, &[sydney_node()], fetched_at).unwrap();
+    assert_eq!(out.reports.len(), 1);
+    assert_eq!(out.observations.len(), 1);
+    assert_eq!(out.reports[0].1.current.feels_like_c, Some(21.6));
+    assert_eq!(out.observations[0].quality_rank, 1);
+    assert_eq!(out.observations[0].rained_bool, Some(true));
 }

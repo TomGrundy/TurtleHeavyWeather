@@ -378,6 +378,7 @@ fn parse_timeseries(entries: &[MetNoTimeseriesEntry]) -> Vec<WeatherPoint> {
             rain_mm,
             wind_kmh,
             humidity_pct,
+            solar_wm2: None,
             summary,
         };
         ensure_feels_like(&mut point);

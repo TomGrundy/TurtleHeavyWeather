@@ -179,16 +179,25 @@ pub fn evaluate_regression(
             .then_with(|| a.lead_bucket.cmp(&b.lead_bucket))
     });
 
-    // Compute suggested inverse-RMSE weights for individual sources with >= 5 samples in 0-6h or 6-24h.
-    let mut inv_rmses: HashMap<String, f64> = HashMap::new();
+    // Compute suggested inverse-error weights prioritizing Feels-Like RMSE and Rain Brier score
+    // for individual sources with >= 5 samples in 0-6h or 6-24h.
+    let mut inv_scores: HashMap<String, f64> = HashMap::new();
     for row in &metrics {
         if row.subject_id != "__aggregate__"
             && (row.lead_bucket == "0-6h" || row.lead_bucket == "6-24h")
             && row.sample_count >= 5
         {
-            if let Some(r) = row.temp_rmse_c {
-                let score = 1.0 / (r + 0.25);
-                inv_rmses
+            let fl_err = row.feels_like_rmse_c.or(row.temp_rmse_c);
+            let rain_err = row.rain_brier_score.map(|b| b * 10.0);
+            let composite_err = match (fl_err, rain_err) {
+                (Some(f), Some(r)) => Some(0.5 * f + 0.5 * r),
+                (Some(f), None) => Some(f),
+                (None, Some(r)) => Some(r),
+                (None, None) => None,
+            };
+            if let Some(err) = composite_err {
+                let score = 1.0 / (err + 0.25);
+                inv_scores
                     .entry(row.subject_id.clone())
                     .and_modify(|prev| *prev = (*prev + score) / 2.0)
                     .or_insert(score);
@@ -196,9 +205,9 @@ pub fn evaluate_regression(
         }
     }
 
-    let total_score: f64 = inv_rmses.values().sum();
+    let total_score: f64 = inv_scores.values().sum();
     let suggested_weights = if total_score > 0.0 {
-        inv_rmses
+        inv_scores
             .into_iter()
             .map(|(k, v)| (k, (v / total_score * 1000.0).round() / 1000.0))
             .collect()

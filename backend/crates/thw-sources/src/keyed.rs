@@ -145,7 +145,10 @@ where
     let client = build_client(ctx)?;
     let mut output = SourceOutput::empty();
 
-    for node in nodes {
+    for (idx, node) in nodes.iter().enumerate() {
+        if idx > 0 && source_id == "tomorrow_io" {
+            tokio::time::sleep(Duration::from_millis(450)).await;
+        }
         let (request_url, sanitized_url) = build_request(node);
         let resp = match client.get(&request_url).send().await {
             Ok(resp) => resp,
@@ -343,6 +346,7 @@ fn parse_weatherapi_report(
                     rain_mm: h.precip_mm,
                     wind_kmh: h.wind_kph,
                     humidity_pct: h.humidity.map(|v| v.clamp(0.0, 100.0)),
+                    solar_wm2: None,
                     summary: h.condition.and_then(|c| c.text),
                 };
                 ensure_feels_like(&mut pt);
@@ -365,6 +369,7 @@ fn parse_weatherapi_report(
             rain_mm: cur.precip_mm,
             wind_kmh: cur.wind_kph,
             humidity_pct: cur.humidity.map(|v| v.clamp(0.0, 100.0)),
+            solar_wm2: None,
             summary: cur.condition.and_then(|c| c.text),
         }
     } else if let Some(first) = hourly.first() {
@@ -508,6 +513,7 @@ fn darksky_to_weather_point(pt: DarkSkyPoint, fallback_time: DateTime<Utc>) -> W
         // `units=si` returns windSpeed in m/s -> convert to km/h
         wind_kmh: pt.wind_speed.map(|ms| (ms * 3.6 * 10.0).round() / 10.0),
         humidity_pct: pt.humidity.map(|h| (h * 100.0).clamp(0.0, 100.0)),
+        solar_wm2: None,
         summary: pt.summary,
     };
     ensure_feels_like(&mut wp);
@@ -723,6 +729,7 @@ fn parse_owm_report(body: &str, fetched_at: DateTime<Utc>) -> Result<SourceRepor
                 rain_mm,
                 wind_kmh,
                 humidity_pct: item.main.humidity.map(|h| h.clamp(0.0, 100.0)),
+                solar_wm2: None,
                 summary,
             };
             ensure_feels_like(&mut wp);
@@ -903,6 +910,7 @@ fn tomorrow_interval_to_point(
         // `units=metric` returns windSpeed in m/s -> convert to km/h
         wind_kmh: vals.wind_speed.map(|ms| (ms * 3.6 * 10.0).round() / 10.0),
         humidity_pct: vals.humidity.map(|h| h.clamp(0.0, 100.0)),
+        solar_wm2: None,
         summary,
     };
     ensure_feels_like(&mut wp);

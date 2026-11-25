@@ -262,6 +262,7 @@ pub fn parse_obs_json(
             rain_mm: rain_mm_1h,
             wind_kmh: row.wind_kmh,
             humidity_pct: row.humidity_pct,
+            solar_wm2: None,
             summary: row.summary.clone(),
         };
         ensure_feels_like(&mut point);
@@ -742,6 +743,7 @@ pub fn parse_amoc_xml(
                     rain_mm: p.rain_mm,
                     wind_kmh: None,
                     humidity_pct: None,
+                    solar_wm2: None,
                     summary: p.precis,
                 }
             })
@@ -1108,6 +1110,7 @@ fn parse_bom_web_hourly(
                 rain_mm,
                 wind_kmh: entry.wind.and_then(|w| w.speed_kilometre),
                 humidity_pct: entry.relative_humidity,
+                solar_wm2: None,
                 summary,
             };
             ensure_feels_like(&mut point);
@@ -1287,5 +1290,247 @@ impl WeatherSource for BomWebApiSource {
         }
 
         Ok(output)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 4. BOM Anonymous FTP State Observations (`ID*60920.xml`)
+// ---------------------------------------------------------------------------
+
+pub const SOURCE_ID_FTP_OBS: &str = "bom_ftp_obs";
+
+#[derive(Debug, Clone)]
+pub struct BomFtpObsSource {
+    host: String,
+    base_dir: String,
+}
+
+impl Default for BomFtpObsSource {
+    fn default() -> Self {
+        Self {
+            host: DEFAULT_FTP_HOST.to_string(),
+            base_dir: DEFAULT_FTP_DIR.to_string(),
+        }
+    }
+}
+
+impl BomFtpObsSource {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+fn ftp_obs_product_for_node(node: &MeshNode) -> Option<String> {
+    node.bom_product_id.as_deref().and_then(|p| {
+        if p.len() >= 3 {
+            Some(format!("{}60920", &p[..3]))
+        } else {
+            None
+        }
+    })
+}
+
+/// Parses a BOM state observations XML document (`ID*60920.xml`) into
+/// `SourceOutput` containing both `SourceReport`s and Tier-1 `ObservationRecord`s.
+pub fn parse_bom_obs_xml(
+    xml: &str,
+    nodes: &[MeshNode],
+    fetched_at: DateTime<Utc>,
+) -> Result<SourceOutput, SourceError> {
+    let mut reader = Reader::from_str(xml);
+    reader.config_mut().trim_text(true);
+
+    let mut current_wmo_id: Option<String> = None;
+    let mut current_time: Option<DateTime<Utc>> = None;
+    let mut current_temp: Option<f64> = None;
+    let mut current_feels: Option<f64> = None;
+    let mut current_hum: Option<f64> = None;
+    let mut current_wind: Option<f64> = None;
+    let mut current_rain: Option<f64> = None;
+    let mut active_elem_type: Option<String> = None;
+    let mut active_text = String::new();
+
+    let mut by_wmo: HashMap<String, WeatherPoint> = HashMap::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(e)) => {
+                let decoder = reader.decoder();
+                match e.name().as_ref() {
+                    b"station" => {
+                        current_wmo_id = attr_value(&e, decoder, b"wmo-id");
+                        current_time = None;
+                    }
+                    b"period" if current_wmo_id.is_some() => {
+                        current_time = attr_value(&e, decoder, b"time-utc")
+                            .and_then(|s| parse_xml_timestamp(&s));
+                        current_temp = None;
+                        current_feels = None;
+                        current_hum = None;
+                        current_wind = None;
+                        current_rain = None;
+                    }
+                    b"element" if current_time.is_some() => {
+                        active_elem_type = attr_value(&e, decoder, b"type");
+                        active_text.clear();
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Text(e)) => {
+                if active_elem_type.is_some() {
+                    if let Ok(t) = e.unescape() {
+                        active_text.push_str(t.as_ref());
+                    }
+                }
+            }
+            Ok(Event::End(e)) => match e.name().as_ref() {
+                b"element" => {
+                    if let Some(kind) = active_elem_type.take() {
+                        let val = active_text.trim().parse::<f64>().ok();
+                        match kind.as_str() {
+                            "air_temperature" => current_temp = val,
+                            "apparent_temp" => current_feels = val,
+                            "rel-humidity" => current_hum = val,
+                            "wind_spd_kmh" => current_wind = val,
+                            "rainfall" => current_rain = val,
+                            _ => {}
+                        }
+                    }
+                    active_text.clear();
+                }
+                b"period" => {
+                    if let (Some(wmo), Some(valid_at)) = (&current_wmo_id, current_time.take()) {
+                        let mut pt = WeatherPoint {
+                            valid_at,
+                            temp_c: current_temp,
+                            feels_like_c: current_feels,
+                            feels_like_is_derived: false,
+                            rain_prob_pct: None,
+                            rain_mm: current_rain,
+                            wind_kmh: current_wind,
+                            humidity_pct: current_hum,
+                            solar_wm2: None,
+                            summary: Some("BOM FTP station observation".to_string()),
+                        };
+                        ensure_feels_like(&mut pt);
+                        by_wmo
+                            .entry(wmo.clone())
+                            .and_modify(|prev| {
+                                if pt.valid_at > prev.valid_at {
+                                    *prev = pt.clone();
+                                }
+                            })
+                            .or_insert(pt);
+                    }
+                }
+                b"station" => {
+                    current_wmo_id = None;
+                }
+                _ => {}
+            },
+            Ok(Event::Eof) => break,
+            Err(e) => {
+                return Err(SourceError::Parse(format!(
+                    "BOM FTP obs XML parse error: {e}"
+                )));
+            }
+            _ => {}
+        }
+    }
+
+    let mut output = SourceOutput::empty();
+    for node in nodes {
+        let Some(wmo) = node.bom_station_id.as_deref() else {
+            continue;
+        };
+        let Some(pt) = by_wmo.get(wmo) else {
+            continue;
+        };
+
+        output.observations.push(ObservationRecord {
+            node_id: node.node_id.clone(),
+            observed_at: pt.valid_at,
+            source_id: SOURCE_ID_FTP_OBS.to_string(),
+            quality_rank: 1,
+            temp_c: pt.temp_c,
+            feels_like_c: pt.feels_like_c,
+            rain_mm_1h: pt.rain_mm,
+            rained_bool: pt.rain_mm.map(|r| r >= 0.2),
+            wind_kmh: pt.wind_kmh,
+            humidity_pct: pt.humidity_pct,
+        });
+
+        output.reports.push((
+            node.node_id.clone(),
+            SourceReport {
+                source_id: SOURCE_ID_FTP_OBS.to_string(),
+                display_name: "BOM Station Observation (FTP)".to_string(),
+                kind: SourceKind::Observation,
+                fetched_at,
+                weight: 1.5,
+                current: pt.clone(),
+                hourly: Vec::new(),
+                source_url: Some("ftp://ftp.bom.gov.au/anon/gen/fwo/".to_string()),
+            },
+        ));
+    }
+
+    Ok(output)
+}
+
+#[async_trait]
+impl WeatherSource for BomFtpObsSource {
+    fn source_id(&self) -> &'static str {
+        SOURCE_ID_FTP_OBS
+    }
+
+    fn display_name(&self) -> &'static str {
+        "BOM Station Observation (FTP)"
+    }
+
+    fn default_weight(&self) -> f64 {
+        1.5
+    }
+
+    async fn fetch_mesh(
+        &self,
+        nodes: &[MeshNode],
+        ctx: &FetchContext,
+    ) -> Result<SourceOutput, SourceError> {
+        let products: Vec<String> = nodes
+            .iter()
+            .filter_map(ftp_obs_product_for_node)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+
+        if products.is_empty() {
+            return Ok(SourceOutput::empty());
+        }
+
+        let host = self.host.clone();
+        let base_dir = self.base_dir.clone();
+        let timeout = Duration::from_secs(ctx.timeout_secs.max(1));
+
+        let files = tokio::task::spawn_blocking(move || {
+            fetch_ftp_products_blocking(&host, &base_dir, &products, timeout)
+        })
+        .await
+        .map_err(|e| SourceError::Ftp(format!("FTP obs blocking task failed: {e}")))??;
+
+        let fetched_at = Utc::now();
+        let mut combined = SourceOutput::empty();
+        for (_product, xml) in files {
+            match parse_bom_obs_xml(&xml, nodes, fetched_at) {
+                Ok(mut out) => {
+                    combined.reports.append(&mut out.reports);
+                    combined.observations.append(&mut out.observations);
+                }
+                Err(e) => warn!(error = %e, "failed parsing BOM FTP observation XML"),
+            }
+        }
+
+        Ok(combined)
     }
 }
