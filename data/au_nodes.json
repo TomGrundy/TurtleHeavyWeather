@@ -1,5 +1,16 @@
 [
   {
+    "node_id": "hub-mont-albert-north",
+    "name": "Mont Albert North (3129)",
+    "state": "VIC",
+    "lat": -37.8081,
+    "lon": 145.1139,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": true
+  },
+  {
     "node_id": "bom-066062",
     "name": "Sydney (Observatory Hill)",
     "state": "NSW",

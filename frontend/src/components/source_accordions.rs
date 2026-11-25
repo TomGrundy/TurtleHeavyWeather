@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 use thw_core::{SourceKind, SourceReport};
 
+use crate::components::{ChartPoint, InteractiveForecastChart};
 use crate::time::format_local_short;
 
 fn kind_label(kind: SourceKind) -> &'static str {
@@ -54,6 +55,19 @@ pub fn SourceAccordions(sources: Vec<SourceReport>) -> impl IntoView {
                     .summary
                     .clone()
                     .unwrap_or_else(|| "No text summary".to_string());
+                let chart_points: Vec<ChartPoint> = src
+                    .hourly
+                    .iter()
+                    .take(24)
+                    .map(|pt| ChartPoint {
+                        valid_at: pt.valid_at,
+                        temp_c: pt.temp_c,
+                        feels_like_c: pt.feels_like_c,
+                        feels_like_sun_c: None,
+                        rain_prob_pct: pt.rain_prob_pct,
+                        rain_mm: pt.rain_mm,
+                    })
+                    .collect();
                 let hourly_rows = src.hourly.into_iter().take(8).collect::<Vec<_>>();
                 let source_url = src.source_url.clone();
 
@@ -78,6 +92,7 @@ pub fn SourceAccordions(sources: Vec<SourceReport>) -> impl IntoView {
                             {source_url.map(|u| view! {
                                 <p><a href=u target="_blank" rel="noopener noreferrer">"Source feed"</a></p>
                             })}
+                            <InteractiveForecastChart points=chart_points title="Source Hourly Forecast (Hover or Tap)" />
                             {if hourly_rows.is_empty() {
                                 view! { <div /> }.into_any()
                             } else {
