@@ -1,0 +1,4 @@
+weather.example.com {
+    encode gzip zstd
+    reverse_proxy turtleheavyweather:8080
+}

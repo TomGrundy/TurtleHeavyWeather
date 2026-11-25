@@ -1,0 +1,20 @@
+[Unit]
+Description=TurtleHeavyWeather Home Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/turtleheavyweather/.env
+ExecStart=/usr/local/bin/thw-server \
+  --bind 127.0.0.1:8080 \
+  --db /var/lib/turtleheavyweather/weather.db \
+  --nodes /opt/turtleheavyweather/data/au_nodes.json \
+  --locations /opt/turtleheavyweather/data/locations_index.json \
+  --static-dir /opt/turtleheavyweather/frontend/dist \
+  --sync-interval-mins 60
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-check-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Clippy (backend + shared)
+        run: cargo clippy --workspace --exclude thw-frontend --all-targets -- -D warnings
+      - name: Clippy (frontend wasm32)
+        run: cargo clippy -p thw-frontend --target wasm32-unknown-unknown --all-targets -- -D warnings
+      - name: Run workspace tests
+        run: cargo test --workspace --exclude thw-frontend
+      - name: Run frontend unit tests
+        run: cargo test -p thw-frontend --lib
+      - name: Build frontend with Trunk
+        run: |
+          cargo install --locked trunk
+          cd frontend && trunk build --release

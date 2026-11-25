@@ -1,0 +1,57 @@
+{
+  "generated_at": "2026-11-25T00:00:00Z",
+  "node": {
+    "node_id": "bom-066062",
+    "name": "Sydney (Observatory Hill)",
+    "state": "NSW",
+    "lat": -33.8607,
+    "lon": 151.205,
+    "bom_station_id": "94768",
+    "bom_product_id": "IDN60901",
+    "bom_forecast_product": "IDN11060",
+    "is_major_hub": true
+  },
+  "current_best_estimate": {
+    "valid_at": "2026-11-25T00:00:00Z",
+    "feels_like_c": 23.4,
+    "temp_c": 24.1,
+    "rain": {
+      "verdict": "possible",
+      "label": "Possible light showers",
+      "probability_pct": 35.0,
+      "expected_mm": 0.6,
+      "is_raining_now": false
+    },
+    "confidence": "high",
+    "spread": {
+      "feels_like_min_c": 22.1,
+      "feels_like_max_c": 24.8,
+      "temp_min_c": 23.0,
+      "temp_max_c": 25.2
+    },
+    "source_count": 2
+  },
+  "hourly_best_estimate": [],
+  "sources": [
+    {
+      "source_id": "bom_obs_json",
+      "display_name": "BOM Station Observation",
+      "kind": "observation",
+      "fetched_at": "2026-11-25T00:00:00Z",
+      "weight": 0.5,
+      "current": {
+        "valid_at": "2026-11-25T00:00:00Z",
+        "temp_c": 24.0,
+        "feels_like_c": 23.2,
+        "feels_like_is_derived": false,
+        "rain_prob_pct": null,
+        "rain_mm": 0.0,
+        "wind_kmh": 18.0,
+        "humidity_pct": 62.0,
+        "summary": "Partly cloudy"
+      },
+      "hourly": [],
+      "source_url": "http://www.bom.gov.au/fwo/IDN60901/IDN60901.94768.json"
+    }
+  ]
+}

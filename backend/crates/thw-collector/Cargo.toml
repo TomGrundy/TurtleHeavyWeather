@@ -1,0 +1,22 @@
+[package]
+name = "thw-collector"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+chrono.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+thw-core = { path = "../thw-core" }
+thw-sources = { path = "../thw-sources" }
+thw-store = { path = "../thw-store" }
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+wiremock.workspace = true

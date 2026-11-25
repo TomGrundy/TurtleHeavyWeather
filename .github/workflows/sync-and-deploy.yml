@@ -1,0 +1,92 @@
+name: Sync Weather Data & Deploy GitHub Pages
+
+on:
+  schedule:
+    # Hourly sync, staggered off :00 UTC to reduce GitHub Actions queue jitter
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-and-sync
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  collect-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Restore rolling 7-day SQLite state from orphan data-state branch
+        run: |
+          mkdir -p state
+          if git ls-remote --exit-code --heads origin data-state >/dev/null 2>&1; then
+            git fetch origin data-state --depth=1
+            git show origin/data-state:weather.db > state/weather.db || rm -f state/weather.db
+          fi
+
+      - name: Run thw-collector (60-min sync, 7-day prune, regression, static JSON export)
+        env:
+          THW_USER_AGENT: ${{ secrets.THW_USER_AGENT }}
+          THW_WEATHERAPI_KEY: ${{ secrets.THW_WEATHERAPI_KEY }}
+          THW_PIRATEWEATHER_KEY: ${{ secrets.THW_PIRATEWEATHER_KEY }}
+          THW_OWM_KEY: ${{ secrets.THW_OWM_KEY }}
+          THW_TOMORROW_KEY: ${{ secrets.THW_TOMORROW_KEY }}
+          THW_WILLYWEATHER_KEY: ${{ secrets.THW_WILLYWEATHER_KEY }}
+        run: |
+          cargo run --release -p thw-collector -- \
+            --nodes data/au_nodes.json \
+            --db state/weather.db \
+            --export-dir frontend/static/data \
+            --locations-index data/locations_index.json \
+            --retention-days 7
+
+      - name: Persist rolling 7-day state to single-commit orphan branch (no main bloat)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          WORKTREE_DIR=$(mktemp -d)
+          git worktree add --orphan -B data-state "$WORKTREE_DIR"
+          cp state/weather.db "$WORKTREE_DIR/weather.db"
+          (
+            cd "$WORKTREE_DIR"
+            git add weather.db
+            git commit -m "chore(data): rolling 7-day weather state $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push --force origin data-state
+          )
+          git worktree remove --force "$WORKTREE_DIR"
+
+      - name: Install Trunk & build Leptos WASM frontend
+        run: |
+          cargo install --locked trunk
+          cd frontend
+          trunk build --release --public-url "/${{ github.event.repository.name }}/"
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: collect-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
