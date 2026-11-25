@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 use thw_core::RegressionSummary;
 
+use crate::time::format_local_full;
+
 fn fmt_opt(val: Option<f64>) -> String {
     val.map(|v| format!("{v:.2}"))
         .unwrap_or_else(|| "—".to_string())
@@ -22,7 +24,7 @@ pub fn RegressionPanel(summary: Option<RegressionSummary>) -> impl IntoView {
             let header_meta = format!(
                 "Window: {} days • Computed: {}",
                 s.window_days,
-                s.computed_at.format("%d %b %Y %H:%M UTC")
+                format_local_full(s.computed_at)
             );
             let mut weights = s.suggested_weights.into_iter().collect::<Vec<_>>();
             weights.sort_by(|a, b| b.1.total_cmp(&a.1));

@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 use thw_core::{SourceKind, SourceReport};
 
+use crate::time::format_local_short;
+
 fn kind_label(kind: SourceKind) -> &'static str {
     match kind {
         SourceKind::Observation => "Observation",
@@ -41,7 +43,7 @@ pub fn SourceAccordions(sources: Vec<SourceReport>) -> impl IntoView {
                     .map(|w| format!("{w:.0} km/h"))
                     .unwrap_or_else(|| "—".to_string());
                 let hum = fmt_opt_pct(src.current.humidity_pct);
-                let fetched = src.fetched_at.format("%d %b %H:%M UTC").to_string();
+                let fetched = format_local_short(src.fetched_at);
                 let derived_note = if src.current.feels_like_is_derived {
                     " (Steadman derived)"
                 } else {
@@ -83,7 +85,7 @@ pub fn SourceAccordions(sources: Vec<SourceReport>) -> impl IntoView {
                                     <table class="data-table">
                                         <thead>
                                             <tr>
-                                                <th>"Time (UTC)"</th>
+                                                <th>"Time (Local)"</th>
                                                 <th>"Feels Like"</th>
                                                 <th>"Temp"</th>
                                                 <th>"Rain %"</th>
@@ -93,7 +95,7 @@ pub fn SourceAccordions(sources: Vec<SourceReport>) -> impl IntoView {
                                         <tbody>
                                             {hourly_rows.into_iter().map(|pt| view! {
                                                 <tr>
-                                                    <td>{pt.valid_at.format("%d %b %H:%M").to_string()}</td>
+                                                    <td>{format_local_short(pt.valid_at)}</td>
                                                     <td>{fmt_opt_temp(pt.feels_like_c)}</td>
                                                     <td>{fmt_opt_temp(pt.temp_c)}</td>
                                                     <td>{fmt_opt_pct(pt.rain_prob_pct)}</td>

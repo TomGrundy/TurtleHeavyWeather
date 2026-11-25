@@ -1,6 +1,7 @@
 pub mod client;
 pub mod components;
 pub mod geolocation;
+pub mod time;
 
 use thw_core::LocationIndexEntry;
 
