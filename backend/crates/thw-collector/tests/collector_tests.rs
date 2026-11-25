@@ -74,9 +74,7 @@ async fn collector_runs_full_sync_regress_prune_and_static_export() {
 
     let sources: Vec<Arc<dyn WeatherSource>> = vec![
         Arc::new(BomObsJsonSource::with_base_url(server.uri())),
-        Arc::new(
-            OpenMeteoSource::new(OpenMeteoModel::BomAccessGlobal).with_base_url(server.uri()),
-        ),
+        Arc::new(OpenMeteoSource::new(OpenMeteoModel::BomAccessGlobal).with_base_url(server.uri())),
     ];
 
     let report = run_sync_cycle_with_sources(

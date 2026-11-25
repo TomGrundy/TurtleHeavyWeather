@@ -347,11 +347,7 @@ fn parse_timeseries(entries: &[MetNoTimeseriesEntry]) -> Vec<WeatherPoint> {
         };
         let valid_at = dt.with_timezone(&Utc);
 
-        let instant = entry
-            .data
-            .instant
-            .as_ref()
-            .and_then(|i| i.details.as_ref());
+        let instant = entry.data.instant.as_ref().and_then(|i| i.details.as_ref());
         let temp_c = instant.and_then(|d| d.air_temperature);
         let humidity_pct = instant.and_then(|d| d.relative_humidity);
         let wind_kmh = instant

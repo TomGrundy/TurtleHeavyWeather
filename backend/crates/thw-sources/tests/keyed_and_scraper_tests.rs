@@ -4,8 +4,8 @@ use chrono::{TimeZone, Utc};
 use serde_json::json;
 use thw_core::{MeshNode, SourceKind, StateCode};
 use thw_sources::keyed::{
-    OpenWeatherMapSource, PirateWeatherSource, TomorrowIoSource, WeatherApiSource,
-    ENV_OWM_KEY, ENV_PIRATEWEATHER_KEY, ENV_TOMORROW_KEY, ENV_WEATHERAPI_KEY,
+    OpenWeatherMapSource, PirateWeatherSource, TomorrowIoSource, WeatherApiSource, ENV_OWM_KEY,
+    ENV_PIRATEWEATHER_KEY, ENV_TOMORROW_KEY, ENV_WEATHERAPI_KEY,
 };
 use thw_sources::scraper::{parse_bom_obs_html, parse_robots_allows, BomHtmlScraperSource};
 use thw_sources::{FetchContext, SourceError, WeatherSource};
@@ -523,9 +523,11 @@ async fn bom_html_scraper_enforces_robots_txt_before_scraping() {
     let allowed_server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/robots.txt"))
-        .respond_with(ResponseTemplate::new(200).set_body_string(
-            "User-agent: *\nDisallow: /cgi-bin/\nAllow: /products/IDN60901/\n",
-        ))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_string(
+                "User-agent: *\nDisallow: /cgi-bin/\nAllow: /products/IDN60901/\n",
+            ),
+        )
         .expect(1)
         .mount(&allowed_server)
         .await;

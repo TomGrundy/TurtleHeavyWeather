@@ -98,7 +98,10 @@ pub fn evaluate_regression(
 ) -> RegressionSummary {
     let mut obs_by_node: HashMap<&str, Vec<&ObservationRecord>> = HashMap::new();
     for obs in observations {
-        obs_by_node.entry(obs.node_id.as_str()).or_default().push(obs);
+        obs_by_node
+            .entry(obs.node_id.as_str())
+            .or_default()
+            .push(obs);
     }
 
     let mut groups: HashMap<(String, &'static str), BucketAccum> = HashMap::new();

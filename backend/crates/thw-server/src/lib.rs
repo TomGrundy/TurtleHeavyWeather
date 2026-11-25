@@ -98,7 +98,10 @@ async fn get_weather(
             ));
         }
         let (node, _) = find_nearest_node(lat, lon, &state.nodes).ok_or_else(|| {
-            ApiError(StatusCode::NOT_FOUND, "No Australian mesh nodes loaded".into())
+            ApiError(
+                StatusCode::NOT_FOUND,
+                "No Australian mesh nodes loaded".into(),
+            )
         })?;
         node.node_id.clone()
     } else if let Some(pc) = params.postcode {
@@ -120,12 +123,21 @@ async fn get_weather(
         ));
     };
 
-    let store = WeatherStore::open_read_only(&state.db_path)
-        .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, format!("Store error: {e}")))?;
+    let store = WeatherStore::open_read_only(&state.db_path).map_err(|e| {
+        ApiError(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Store error: {e}"),
+        )
+    })?;
 
     let bundle = store
         .fetch_latest_node_bundle(&target_node_id)
-        .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, format!("Query error: {e}")))?
+        .map_err(|e| {
+            ApiError(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Query error: {e}"),
+            )
+        })?
         .ok_or_else(|| {
             ApiError(
                 StatusCode::NOT_FOUND,
@@ -137,12 +149,21 @@ async fn get_weather(
 }
 
 async fn get_regression(State(state): State<AppState>) -> Result<Response, ApiError> {
-    let store = WeatherStore::open_read_only(&state.db_path)
-        .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, format!("Store error: {e}")))?;
+    let store = WeatherStore::open_read_only(&state.db_path).map_err(|e| {
+        ApiError(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Store error: {e}"),
+        )
+    })?;
 
     let summary = store
         .load_regression_summary()
-        .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, format!("Query error: {e}")))?
+        .map_err(|e| {
+            ApiError(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Query error: {e}"),
+            )
+        })?
         .ok_or_else(|| {
             ApiError(
                 StatusCode::NOT_FOUND,

@@ -157,7 +157,13 @@ pub async fn run_sync_cycle_with_sources(
 
     while let Some(joined) = join_set.join_next().await {
         match joined {
-            Ok((source_id, Ok(SourceOutput { reports, observations: obs }))) => {
+            Ok((
+                source_id,
+                Ok(SourceOutput {
+                    reports,
+                    observations: obs,
+                }),
+            )) => {
                 info!(
                     source_id,
                     report_count = reports.len(),
@@ -211,7 +217,8 @@ pub async fn run_sync_cycle_with_sources(
         .map(to_regression_input)
         .collect();
     let hist_obs = store.list_observations_window(window_since, now)?;
-    let regression = evaluate_regression(&hist_forecasts, &hist_obs, now, window_days, &display_names);
+    let regression =
+        evaluate_regression(&hist_forecasts, &hist_obs, now, window_days, &display_names);
     store.replace_regression_metrics(&regression)?;
 
     if let Some(dir) = export_dir {

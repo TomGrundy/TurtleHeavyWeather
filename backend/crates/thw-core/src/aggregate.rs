@@ -155,18 +155,12 @@ pub fn aggregate_node_bundle(
         .iter()
         .any(|r| r.kind == SourceKind::Observation && r.current.rain_mm.unwrap_or(0.0) >= 0.2);
 
-    let temp_min_c = temps
-        .iter()
-        .map(|(v, _)| *v)
-        .fold(f64::INFINITY, f64::min);
+    let temp_min_c = temps.iter().map(|(v, _)| *v).fold(f64::INFINITY, f64::min);
     let temp_max_c = temps
         .iter()
         .map(|(v, _)| *v)
         .fold(f64::NEG_INFINITY, f64::max);
-    let feels_like_min_c = feels
-        .iter()
-        .map(|(v, _)| *v)
-        .fold(f64::INFINITY, f64::min);
+    let feels_like_min_c = feels.iter().map(|(v, _)| *v).fold(f64::INFINITY, f64::min);
     let feels_like_max_c = feels
         .iter()
         .map(|(v, _)| *v)
@@ -338,15 +332,14 @@ mod tests {
             },
         ];
 
-        let bundle = aggregate_node_bundle(
-            &test_node(),
-            &reports,
-            now,
-            &AggregationConfig::default(),
-        )
-        .unwrap();
+        let bundle =
+            aggregate_node_bundle(&test_node(), &reports, now, &AggregationConfig::default())
+                .unwrap();
         assert_eq!(bundle.current_best_estimate.source_count, 3);
-        assert_eq!(bundle.current_best_estimate.confidence, ConfidenceLevel::High);
+        assert_eq!(
+            bundle.current_best_estimate.confidence,
+            ConfidenceLevel::High
+        );
         assert_eq!(
             bundle.current_best_estimate.rain.verdict,
             RainVerdict::Likely
@@ -378,13 +371,9 @@ mod tests {
             hourly: vec![],
             source_url: None,
         }];
-        let bundle = aggregate_node_bundle(
-            &test_node(),
-            &reports,
-            now,
-            &AggregationConfig::default(),
-        )
-        .unwrap();
+        let bundle =
+            aggregate_node_bundle(&test_node(), &reports, now, &AggregationConfig::default())
+                .unwrap();
         assert_eq!(
             bundle.current_best_estimate.rain.verdict,
             RainVerdict::Raining

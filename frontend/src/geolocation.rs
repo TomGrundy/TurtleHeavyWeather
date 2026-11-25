@@ -43,7 +43,8 @@ where
 
     let error = Closure::once(move |err: PositionError| {
         let msg = match err.code() {
-            1 => "Location permission was denied. Please search by suburb or postcode instead.".into(),
+            1 => "Location permission was denied. Please search by suburb or postcode instead."
+                .into(),
             2 => "Location unavailable from browser/OS.".into(),
             3 => "Location request timed out.".into(),
             _ => format!("Geolocation error: {}", err.message()),

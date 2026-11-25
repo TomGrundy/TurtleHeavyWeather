@@ -36,7 +36,11 @@ pub fn BestEstimateCard(
         bundle.generated_at.format("%d %b %H:%M UTC")
     );
 
-    let hourly = bundle.hourly_best_estimate.into_iter().take(12).collect::<Vec<_>>();
+    let hourly = bundle
+        .hourly_best_estimate
+        .into_iter()
+        .take(12)
+        .collect::<Vec<_>>();
 
     view! {
         <section class="hero-card">

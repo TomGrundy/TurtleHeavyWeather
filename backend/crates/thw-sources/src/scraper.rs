@@ -448,7 +448,11 @@ fn build_column_map(header_rows: &[ElementRef<'_>], cell_sel: &Selector) -> Colu
 
         let mut col_idx = 0usize;
         for cell in row.select(cell_sel) {
-            while grid[row_idx].get(col_idx).and_then(|v| v.as_ref()).is_some() {
+            while grid[row_idx]
+                .get(col_idx)
+                .and_then(|v| v.as_ref())
+                .is_some()
+            {
                 col_idx += 1;
             }
             let colspan = parse_colspan(cell);
@@ -535,10 +539,7 @@ fn build_column_map(header_rows: &[ElementRef<'_>], cell_sel: &Selector) -> Colu
 
 fn parse_numeric_cell(raw: &str) -> Option<f64> {
     let trimmed = raw.trim();
-    if trimmed.is_empty()
-        || trimmed == "-"
-        || trimmed == "—"
-        || trimmed.eq_ignore_ascii_case("n/a")
+    if trimmed.is_empty() || trimmed == "-" || trimmed == "—" || trimmed.eq_ignore_ascii_case("n/a")
     {
         return None;
     }
@@ -825,6 +826,10 @@ Disallow:
             "/data/feed.json?v=1"
         ));
         assert!(!parse_robots_allows(robots, "SomeBot", "/admin/panel"));
-        assert!(parse_robots_allows(robots, "FriendlyBot/2.0", "/admin/panel"));
+        assert!(parse_robots_allows(
+            robots,
+            "FriendlyBot/2.0",
+            "/admin/panel"
+        ));
     }
 }

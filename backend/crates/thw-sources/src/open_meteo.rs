@@ -3,7 +3,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::Deserialize;
-use thw_core::{ensure_feels_like, MeshNode, ObservationRecord, SourceKind, SourceReport, WeatherPoint};
+use thw_core::{
+    ensure_feels_like, MeshNode, ObservationRecord, SourceKind, SourceReport, WeatherPoint,
+};
 
 use crate::{FetchContext, SourceError, SourceOutput, WeatherSource};
 

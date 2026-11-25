@@ -10,7 +10,10 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
-#[command(name = "thw-collector", about = "TurtleHeavyWeather scheduled collector CLI")]
+#[command(
+    name = "thw-collector",
+    about = "TurtleHeavyWeather scheduled collector CLI"
+)]
 struct Cli {
     /// Path to Australian mesh nodes JSON file
     #[arg(long, default_value = "data/au_nodes.json")]

@@ -13,7 +13,10 @@ use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
-#[command(name = "thw-server", about = "TurtleHeavyWeather Home Server (NUC) API & UI host")]
+#[command(
+    name = "thw-server",
+    about = "TurtleHeavyWeather Home Server (NUC) API & UI host"
+)]
 struct Cli {
     #[arg(long, default_value = "127.0.0.1:8080", env = "THW_BIND_ADDR")]
     bind: SocketAddr,
@@ -24,7 +27,11 @@ struct Cli {
     #[arg(long, default_value = "data/au_nodes.json", env = "THW_NODES_PATH")]
     nodes: PathBuf,
 
-    #[arg(long, default_value = "data/locations_index.json", env = "THW_LOCATIONS_PATH")]
+    #[arg(
+        long,
+        default_value = "data/locations_index.json",
+        env = "THW_LOCATIONS_PATH"
+    )]
     locations: PathBuf,
 
     #[arg(long, env = "THW_STATIC_DIR")]

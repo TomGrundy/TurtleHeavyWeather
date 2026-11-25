@@ -54,7 +54,9 @@ fn App() -> impl IntoView {
                     if selected.get_untracked().is_none() {
                         if let Some(default_loc) = list
                             .iter()
-                            .find(|l| l.postcode == "2000" && l.suburb.eq_ignore_ascii_case("Sydney"))
+                            .find(|l| {
+                                l.postcode == "2000" && l.suburb.eq_ignore_ascii_case("Sydney")
+                            })
                             .or_else(|| list.first())
                             .cloned()
                         {
@@ -121,7 +123,8 @@ fn App() -> impl IntoView {
                         set_query.set(String::new());
                     } else {
                         set_status_msg.set(Some(
-                            "Locations index is still loading; please try again in a moment.".into(),
+                            "Locations index is still loading; please try again in a moment."
+                                .into(),
                         ));
                     }
                 }

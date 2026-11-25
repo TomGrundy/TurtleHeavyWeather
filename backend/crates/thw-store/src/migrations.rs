@@ -158,10 +158,9 @@ pub fn run_migrations(conn: &mut Connection) -> Result<(), StoreError> {
 
 /// Returns the highest applied migration version, or `0` if none have been applied.
 pub fn current_schema_version(conn: &Connection) -> Result<i64, StoreError> {
-    let version: Option<i64> = conn.query_row(
-        "SELECT MAX(version) FROM schema_migrations",
-        [],
-        |row| row.get(0),
-    )?;
+    let version: Option<i64> =
+        conn.query_row("SELECT MAX(version) FROM schema_migrations", [], |row| {
+            row.get(0)
+        })?;
     Ok(version.unwrap_or(0))
 }

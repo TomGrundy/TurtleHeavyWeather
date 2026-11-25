@@ -353,7 +353,9 @@ fn observation_upserts_and_retention_pruning_boundaries() {
         ],
         source_url: None,
     };
-    store.upsert_source_reports(&node.node_id, &[report]).unwrap();
+    store
+        .upsert_source_reports(&node.node_id, &[report])
+        .unwrap();
 
     // Insert aggregate bundle with an expired current estimate and a recent hourly estimate.
     let mut bundle = sample_bundle(node.clone(), expired);
@@ -436,9 +438,7 @@ fn observation_upserts_and_retention_pruning_boundaries() {
     assert_eq!(stats.observations_deleted, 1);
 
     // Remaining observations: exact_boundary + recent (Tier 1 before Tier 2).
-    let remaining_obs = store
-        .list_observations_window(expired, future)
-        .unwrap();
+    let remaining_obs = store.list_observations_window(expired, future).unwrap();
     assert_eq!(remaining_obs.len(), 3);
     assert_eq!(remaining_obs[0].observed_at, exact_boundary);
     assert_eq!(remaining_obs[1].observed_at, recent);

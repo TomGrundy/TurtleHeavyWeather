@@ -252,10 +252,7 @@ async fn met_no_enforces_user_agent_parses_compact_and_derives_feels_like() {
     assert!(report.current.feels_like_is_derived);
     assert_eq!(report.current.rain_mm, Some(0.4));
     assert_eq!(report.current.rain_prob_pct, Some(30.0));
-    assert_eq!(
-        report.current.summary.as_deref(),
-        Some("partlycloudy_day")
-    );
+    assert_eq!(report.current.summary.as_deref(), Some("partlycloudy_day"));
 
     // Step 1 falls back to next_6_hours when next_1_hours is absent.
     assert_eq!(report.hourly[1].rain_mm, Some(1.8));

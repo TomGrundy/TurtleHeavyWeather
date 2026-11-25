@@ -257,10 +257,7 @@ impl WeatherApiSource {
         }
     }
 
-    pub fn with_key_and_base_url(
-        api_key: impl Into<String>,
-        base_url: impl Into<String>,
-    ) -> Self {
+    pub fn with_key_and_base_url(api_key: impl Into<String>, base_url: impl Into<String>) -> Self {
         let key = api_key.into();
         Self {
             api_key: normalize_key(Some(&key)),
@@ -322,7 +319,10 @@ struct WeatherApiHour {
     condition: Option<WeatherApiCondition>,
 }
 
-fn parse_weatherapi_report(body: &str, fetched_at: DateTime<Utc>) -> Result<SourceReport, SourceError> {
+fn parse_weatherapi_report(
+    body: &str,
+    fetched_at: DateTime<Utc>,
+) -> Result<SourceReport, SourceError> {
     let parsed: WeatherApiResponse =
         serde_json::from_str(body).map_err(|e| SourceError::Parse(format!("weatherapi: {e}")))?;
 
@@ -456,10 +456,7 @@ impl PirateWeatherSource {
         }
     }
 
-    pub fn with_key_and_base_url(
-        api_key: impl Into<String>,
-        base_url: impl Into<String>,
-    ) -> Self {
+    pub fn with_key_and_base_url(api_key: impl Into<String>, base_url: impl Into<String>) -> Self {
         let key = api_key.into();
         Self {
             api_key: normalize_key(Some(&key)),
@@ -506,9 +503,7 @@ fn darksky_to_weather_point(pt: DarkSkyPoint, fallback_time: DateTime<Utc>) -> W
         temp_c: pt.temperature,
         feels_like_c: pt.apparent_temperature,
         feels_like_is_derived: false,
-        rain_prob_pct: pt
-            .precip_probability
-            .map(|p| (p * 100.0).clamp(0.0, 100.0)),
+        rain_prob_pct: pt.precip_probability.map(|p| (p * 100.0).clamp(0.0, 100.0)),
         rain_mm: pt.precip_intensity,
         // `units=si` returns windSpeed in m/s -> convert to km/h
         wind_kmh: pt.wind_speed.map(|ms| (ms * 3.6 * 10.0).round() / 10.0),
@@ -635,10 +630,7 @@ impl OpenWeatherMapSource {
         }
     }
 
-    pub fn with_key_and_base_url(
-        api_key: impl Into<String>,
-        base_url: impl Into<String>,
-    ) -> Self {
+    pub fn with_key_and_base_url(api_key: impl Into<String>, base_url: impl Into<String>) -> Self {
         let key = api_key.into();
         Self {
             api_key: normalize_key(Some(&key)),
@@ -822,10 +814,7 @@ impl TomorrowIoSource {
         }
     }
 
-    pub fn with_key_and_base_url(
-        api_key: impl Into<String>,
-        base_url: impl Into<String>,
-    ) -> Self {
+    pub fn with_key_and_base_url(api_key: impl Into<String>, base_url: impl Into<String>) -> Self {
         let key = api_key.into();
         Self {
             api_key: normalize_key(Some(&key)),
@@ -924,8 +913,8 @@ fn parse_tomorrow_report(
     body: &str,
     fetched_at: DateTime<Utc>,
 ) -> Result<SourceReport, SourceError> {
-    let parsed: TomorrowResponse = serde_json::from_str(body)
-        .map_err(|e| SourceError::Parse(format!("tomorrow_io: {e}")))?;
+    let parsed: TomorrowResponse =
+        serde_json::from_str(body).map_err(|e| SourceError::Parse(format!("tomorrow_io: {e}")))?;
 
     let timelines = parsed
         .timelines

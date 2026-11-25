@@ -42,7 +42,11 @@ fn round_3dp(val: f64) -> f64 {
 fn clean_bom_text(raw: Option<String>) -> Option<String> {
     raw.and_then(|s| {
         let trimmed = s.trim();
-        if trimmed.is_empty() || trimmed == "-" || trimmed == "--" || trimmed.eq_ignore_ascii_case("n/a") {
+        if trimmed.is_empty()
+            || trimmed == "-"
+            || trimmed == "--"
+            || trimmed.eq_ignore_ascii_case("n/a")
+        {
             None
         } else {
             Some(trimmed.to_string())
@@ -569,8 +573,7 @@ pub fn parse_amoc_xml(
                     }
                     b"forecast" => in_forecast = true,
                     b"area" if in_forecast => {
-                        let area_type =
-                            attr_value(&e, decoder, b"type").unwrap_or_default();
+                        let area_type = attr_value(&e, decoder, b"type").unwrap_or_default();
                         if area_type.eq_ignore_ascii_case("location")
                             || area_type.eq_ignore_ascii_case("metropolitan")
                         {
@@ -715,7 +718,11 @@ pub fn parse_amoc_xml(
         };
 
         let mut periods = area.periods.clone();
-        periods.sort_by(|a, b| a.valid_at.cmp(&b.valid_at).then_with(|| a.index.cmp(&b.index)));
+        periods.sort_by(|a, b| {
+            a.valid_at
+                .cmp(&b.valid_at)
+                .then_with(|| a.index.cmp(&b.index))
+        });
 
         let points: Vec<WeatherPoint> = periods
             .into_iter()
@@ -1169,9 +1176,7 @@ async fn resolve_geohash(
                 .is_some_and(|s| s.eq_ignore_ascii_case(expected_state))
         })
         .or_else(|| parsed.data.first())
-        .ok_or_else(|| {
-            SourceError::Parse(format!("BOM web locations empty for {}", node.name))
-        })?;
+        .ok_or_else(|| SourceError::Parse(format!("BOM web locations empty for {}", node.name)))?;
 
     let geohash = entry.geohash.clone();
     if let Ok(mut guard) = cache.lock() {
@@ -1229,13 +1234,8 @@ impl WeatherSource for BomWebApiSource {
                 break;
             }
 
-            let geohash = match resolve_geohash(
-                &client,
-                &self.base_url,
-                node,
-                &self.geohash_cache,
-            )
-            .await
+            let geohash = match resolve_geohash(&client, &self.base_url, node, &self.geohash_cache)
+                .await
             {
                 Ok(gh) => gh,
                 Err(e) => {
@@ -1245,7 +1245,10 @@ impl WeatherSource for BomWebApiSource {
                 }
             };
 
-            let forecast_url = format!("{}/v1/locations/{}/forecasts/hourly", self.base_url, geohash);
+            let forecast_url = format!(
+                "{}/v1/locations/{}/forecasts/hourly",
+                self.base_url, geohash
+            );
             let resp = match client.get(&forecast_url).send().await {
                 Ok(r) => match r.error_for_status() {
                     Ok(ok) => ok,
