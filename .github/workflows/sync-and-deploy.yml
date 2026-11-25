@@ -73,7 +73,7 @@ jobs:
         run: |
           cargo install --locked trunk
           cd frontend
-          trunk build --release --public-url "/${{ github.event.repository.name }}/"
+          trunk build --release --public-url "/"
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

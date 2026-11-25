@@ -136,9 +136,16 @@ fn App() -> impl IntoView {
     view! {
         <div class="app-shell">
             <header class="topbar">
-                <div class="brand">
-                    <h1>"TurtleHeavyWeather"</h1>
-                    <p>"Australian Multi-Source Consensus Weather"</p>
+                <div class="brand brand-row">
+                    <img
+                        src="assets/logo-white.png"
+                        alt="TurtleHeavyWeather logo"
+                        class="brand-logo"
+                    />
+                    <div>
+                        <h1>"TurtleHeavyWeather"</h1>
+                        <p>"Australian Multi-Source Consensus Weather"</p>
+                    </div>
                 </div>
                 <nav class="nav-tabs">
                     <button
