@@ -20,6 +20,7 @@ pub enum OpenMeteoModel {
     BomAccessGlobal,
     EcmwfIfs,
     GfsGlobal,
+    IconGlobal,
 }
 
 impl OpenMeteoModel {
@@ -29,6 +30,7 @@ impl OpenMeteoModel {
             Self::BomAccessGlobal => "open_meteo_bom_access",
             Self::EcmwfIfs => "open_meteo_ecmwf",
             Self::GfsGlobal => "open_meteo_gfs",
+            Self::IconGlobal => "open_meteo_icon",
         }
     }
 
@@ -38,6 +40,7 @@ impl OpenMeteoModel {
             Self::BomAccessGlobal => "Open-Meteo (BOM ACCESS-G)",
             Self::EcmwfIfs => "Open-Meteo (ECMWF IFS)",
             Self::GfsGlobal => "Open-Meteo (NOAA GFS)",
+            Self::IconGlobal => "Open-Meteo (DWD ICON)",
         }
     }
 
@@ -47,6 +50,7 @@ impl OpenMeteoModel {
             Self::BomAccessGlobal => "bom_access_global",
             Self::EcmwfIfs => "ecmwf_ifs025",
             Self::GfsGlobal => "gfs_global",
+            Self::IconGlobal => "icon_seamless",
         }
     }
 
@@ -56,6 +60,7 @@ impl OpenMeteoModel {
             Self::BomAccessGlobal => 1.15,
             Self::EcmwfIfs => 1.10,
             Self::GfsGlobal => 0.95,
+            Self::IconGlobal => 1.00,
         }
     }
 }
@@ -325,6 +330,13 @@ fn parse_hourly_points(hourly: &OpenMeteoHourly) -> Vec<WeatherPoint> {
             summary: None,
         };
         ensure_feels_like(&mut point);
+        if point.temp_c.is_none()
+            && point.feels_like_c.is_none()
+            && point.rain_prob_pct.is_none()
+            && point.rain_mm.is_none()
+        {
+            continue;
+        }
         points.push(point);
     }
 
