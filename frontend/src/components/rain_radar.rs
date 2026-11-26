@@ -126,7 +126,7 @@ pub fn RainRadarPanel(lat: f64, lon: f64, location_name: String) -> impl IntoVie
     let (timeline, set_timeline) = signal(Option::<RadarTimeline>::None);
     let (error_msg, set_error_msg) = signal(Option::<String>::None);
     let (frame_idx, set_frame_idx) = signal(0_usize);
-    let (zoom, set_zoom) = signal(8_u8);
+    let (zoom, set_zoom) = signal(7_u8);
     let (playing, set_playing) = signal(false);
 
     Effect::new(move |_| {
@@ -176,15 +176,15 @@ pub fn RainRadarPanel(lat: f64, lon: f64, location_name: String) -> impl IntoVie
                 <div class="radar-zoom-group">
                     <button
                         type="button"
-                        class=move || if zoom.get() == 8 { "radar-ctrl-btn active" } else { "radar-ctrl-btn" }
-                        on:click=move |_| set_zoom.set(8)
+                        class=move || if zoom.get() == 7 { "radar-ctrl-btn active" } else { "radar-ctrl-btn" }
+                        on:click=move |_| set_zoom.set(7)
                     >
                         "Metro"
                     </button>
                     <button
                         type="button"
-                        class=move || if zoom.get() == 6 { "radar-ctrl-btn active" } else { "radar-ctrl-btn" }
-                        on:click=move |_| set_zoom.set(6)
+                        class=move || if zoom.get() == 5 { "radar-ctrl-btn active" } else { "radar-ctrl-btn" }
+                        on:click=move |_| set_zoom.set(5)
                     >
                         "Regional"
                     </button>
@@ -307,8 +307,8 @@ mod tests {
 
     #[test]
     fn melbourne_tile_coords_sit_inside_center_tile() {
-        let coord = lat_lon_to_tile_grid(-37.798, 145.110, 8);
-        assert_eq!(coord.z, 8);
+        let coord = lat_lon_to_tile_grid(-37.798, 145.110, 7);
+        assert_eq!(coord.z, 7);
         assert!(coord.pin_left_pct > 33.0 && coord.pin_left_pct < 67.0);
         assert!(coord.pin_top_pct > 33.0 && coord.pin_top_pct < 67.0);
     }
