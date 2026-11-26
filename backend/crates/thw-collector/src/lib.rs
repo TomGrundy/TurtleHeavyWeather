@@ -54,6 +54,8 @@ pub fn default_sources() -> Vec<Box<dyn WeatherSource>> {
         Box::new(BomWebApiSource::new()),
         Box::new(OpenMeteoSource::new(OpenMeteoModel::BomAccessGlobal)),
         Box::new(OpenMeteoSource::new(OpenMeteoModel::EcmwfIfs).with_tier2_observations(true)),
+        Box::new(OpenMeteoSource::new(OpenMeteoModel::UkmoGlobal)),
+        Box::new(OpenMeteoSource::new(OpenMeteoModel::EcmwfAifs)),
         Box::new(OpenMeteoSource::new(OpenMeteoModel::GfsGlobal)),
         Box::new(OpenMeteoSource::new(OpenMeteoModel::IconGlobal)),
         Box::new(MetNorwaySource::default()),

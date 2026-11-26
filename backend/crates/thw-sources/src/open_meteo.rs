@@ -19,6 +19,8 @@ const HOURLY_FIELDS: &str = "temperature_2m,apparent_temperature,precipitation_p
 pub enum OpenMeteoModel {
     BomAccessGlobal,
     EcmwfIfs,
+    EcmwfAifs,
+    UkmoGlobal,
     GfsGlobal,
     IconGlobal,
 }
@@ -29,6 +31,8 @@ impl OpenMeteoModel {
         match self {
             Self::BomAccessGlobal => "open_meteo_bom_access",
             Self::EcmwfIfs => "open_meteo_ecmwf",
+            Self::EcmwfAifs => "open_meteo_ecmwf_aifs",
+            Self::UkmoGlobal => "open_meteo_ukmo",
             Self::GfsGlobal => "open_meteo_gfs",
             Self::IconGlobal => "open_meteo_icon",
         }
@@ -39,6 +43,8 @@ impl OpenMeteoModel {
         match self {
             Self::BomAccessGlobal => "Open-Meteo (BOM ACCESS-G)",
             Self::EcmwfIfs => "Open-Meteo (ECMWF IFS)",
+            Self::EcmwfAifs => "Open-Meteo (ECMWF AIFS)",
+            Self::UkmoGlobal => "Open-Meteo (UK Met Office)",
             Self::GfsGlobal => "Open-Meteo (NOAA GFS)",
             Self::IconGlobal => "Open-Meteo (DWD ICON)",
         }
@@ -49,6 +55,8 @@ impl OpenMeteoModel {
         match self {
             Self::BomAccessGlobal => "bom_access_global",
             Self::EcmwfIfs => "ecmwf_ifs025",
+            Self::EcmwfAifs => "ecmwf_aifs025",
+            Self::UkmoGlobal => "ukmo_global_deterministic_10km",
             Self::GfsGlobal => "gfs_global",
             Self::IconGlobal => "icon_seamless",
         }
@@ -59,6 +67,8 @@ impl OpenMeteoModel {
         match self {
             Self::BomAccessGlobal => 1.15,
             Self::EcmwfIfs => 1.10,
+            Self::EcmwfAifs => 1.05,
+            Self::UkmoGlobal => 1.10,
             Self::GfsGlobal => 0.95,
             Self::IconGlobal => 1.00,
         }

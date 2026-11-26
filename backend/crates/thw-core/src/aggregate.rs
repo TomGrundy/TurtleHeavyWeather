@@ -25,6 +25,8 @@ impl Default for AggregationConfig {
         source_weights.insert("bom_web_api".to_string(), 1.25);
         source_weights.insert("open_meteo_bom_access".to_string(), 1.2);
         source_weights.insert("open_meteo_ecmwf".to_string(), 1.15);
+        source_weights.insert("open_meteo_ukmo".to_string(), 1.1);
+        source_weights.insert("open_meteo_ecmwf_aifs".to_string(), 1.05);
         source_weights.insert("open_meteo_icon".to_string(), 1.05);
         source_weights.insert("met_no".to_string(), 1.05);
         source_weights.insert("open_meteo_gfs".to_string(), 0.95);
