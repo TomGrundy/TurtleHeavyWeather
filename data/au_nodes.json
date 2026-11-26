@@ -11,6 +11,17 @@
     "is_major_hub": true
   },
   {
+    "node_id": "bom-086338",
+    "name": "Melbourne (Olympic Park)",
+    "state": "VIC",
+    "lat": -37.8255,
+    "lon": 144.9816,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": true
+  },
+  {
     "node_id": "bom-066062",
     "name": "Sydney (Observatory Hill)",
     "state": "NSW",
@@ -19,6 +30,149 @@
     "bom_station_id": "94768",
     "bom_product_id": "IDN60901",
     "bom_forecast_product": "IDN11060",
+    "is_major_hub": true
+  },
+  {
+    "node_id": "hub-cremorne-vic",
+    "name": "Cremorne (3121)",
+    "state": "VIC",
+    "lat": -37.83,
+    "lon": 144.993,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-cremorne-nsw",
+    "name": "Cremorne (2090)",
+    "state": "NSW",
+    "lat": -33.8265,
+    "lon": 151.2276,
+    "bom_station_id": "94768",
+    "bom_product_id": "IDN60901",
+    "bom_forecast_product": "IDN11060",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-camberwell",
+    "name": "Camberwell (3124)",
+    "state": "VIC",
+    "lat": -37.8334,
+    "lon": 145.0659,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-hawthorn",
+    "name": "Hawthorn (3122)",
+    "state": "VIC",
+    "lat": -37.8222,
+    "lon": 145.0328,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-doncaster",
+    "name": "Doncaster (3108)",
+    "state": "VIC",
+    "lat": -37.7866,
+    "lon": 145.121,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-healesville",
+    "name": "Healesville (3777)",
+    "state": "VIC",
+    "lat": -37.6561,
+    "lon": 145.5139,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-parkville",
+    "name": "Parkville (3052)",
+    "state": "VIC",
+    "lat": -37.7862,
+    "lon": 144.9474,
+    "bom_station_id": "95936",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-werribee",
+    "name": "Werribee (3030)",
+    "state": "VIC",
+    "lat": -37.8998,
+    "lon": 144.6641,
+    "bom_station_id": "94854",
+    "bom_product_id": "IDV60901",
+    "bom_forecast_product": "IDV10753",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "bom-070351",
+    "name": "Canberra",
+    "state": "ACT",
+    "lat": -35.3088,
+    "lon": 149.2004,
+    "bom_station_id": "94926",
+    "bom_product_id": "IDN60901",
+    "bom_forecast_product": "IDN11060",
+    "is_major_hub": true
+  },
+  {
+    "node_id": "hub-mooloolaba",
+    "name": "Mooloolaba (4557)",
+    "state": "QLD",
+    "lat": -26.682,
+    "lon": 153.118,
+    "bom_station_id": "94569",
+    "bom_product_id": "IDQ60901",
+    "bom_forecast_product": "IDQ11295",
+    "is_major_hub": false
+  },
+  {
+    "node_id": "hub-maroochydore",
+    "name": "Maroochydore (4558)",
+    "state": "QLD",
+    "lat": -26.65,
+    "lon": 153.1,
+    "bom_station_id": "94569",
+    "bom_product_id": "IDQ60901",
+    "bom_forecast_product": "IDQ11295",
+    "is_major_hub": true
+  },
+  {
+    "node_id": "bom-040913",
+    "name": "Brisbane",
+    "state": "QLD",
+    "lat": -27.4808,
+    "lon": 153.0389,
+    "bom_station_id": "94576",
+    "bom_product_id": "IDQ60901",
+    "bom_forecast_product": "IDQ11295",
+    "is_major_hub": true
+  },
+  {
+    "node_id": "bom-039083",
+    "name": "Rockhampton",
+    "state": "QLD",
+    "lat": -23.3753,
+    "lon": 150.4775,
+    "bom_station_id": "94374",
+    "bom_product_id": "IDQ60901",
+    "bom_forecast_product": "IDQ11295",
     "is_major_hub": true
   },
   {
@@ -63,7 +217,7 @@
     "bom_station_id": "94774",
     "bom_product_id": "IDN60901",
     "bom_forecast_product": "IDN11060",
-    "is_major_hub": true
+    "is_major_hub": false
   },
   {
     "node_id": "bom-068228",
@@ -130,28 +284,6 @@
     "bom_product_id": "IDN60901",
     "bom_forecast_product": "IDN11060",
     "is_major_hub": false
-  },
-  {
-    "node_id": "bom-070351",
-    "name": "Canberra",
-    "state": "ACT",
-    "lat": -35.3088,
-    "lon": 149.2004,
-    "bom_station_id": "94926",
-    "bom_product_id": "IDN60901",
-    "bom_forecast_product": "IDN11060",
-    "is_major_hub": true
-  },
-  {
-    "node_id": "bom-086338",
-    "name": "Melbourne (Olympic Park)",
-    "state": "VIC",
-    "lat": -37.8255,
-    "lon": 144.9816,
-    "bom_station_id": "95936",
-    "bom_product_id": "IDV60901",
-    "bom_forecast_product": "IDV10753",
-    "is_major_hub": true
   },
   {
     "node_id": "bom-086282",
@@ -231,17 +363,6 @@
     "is_major_hub": false
   },
   {
-    "node_id": "bom-040913",
-    "name": "Brisbane",
-    "state": "QLD",
-    "lat": -27.4808,
-    "lon": 153.0389,
-    "bom_station_id": "94576",
-    "bom_product_id": "IDQ60901",
-    "bom_forecast_product": "IDQ11295",
-    "is_major_hub": true
-  },
-  {
     "node_id": "bom-040764",
     "name": "Gold Coast Seaway",
     "state": "QLD",
@@ -275,17 +396,6 @@
     "is_major_hub": false
   },
   {
-    "node_id": "bom-039083",
-    "name": "Rockhampton",
-    "state": "QLD",
-    "lat": -23.3753,
-    "lon": 150.4775,
-    "bom_station_id": "94374",
-    "bom_product_id": "IDQ60901",
-    "bom_forecast_product": "IDQ11295",
-    "is_major_hub": false
-  },
-  {
     "node_id": "bom-032040",
     "name": "Townsville",
     "state": "QLD",
@@ -305,7 +415,7 @@
     "bom_station_id": "94287",
     "bom_product_id": "IDQ60901",
     "bom_forecast_product": "IDQ11295",
-    "is_major_hub": true
+    "is_major_hub": false
   },
   {
     "node_id": "bom-029127",
@@ -481,7 +591,7 @@
     "bom_station_id": "94326",
     "bom_product_id": "IDD60901",
     "bom_forecast_product": "IDD10207",
-    "is_major_hub": true
+    "is_major_hub": false
   },
   {
     "node_id": "bom-014932",

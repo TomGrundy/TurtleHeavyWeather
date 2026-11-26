@@ -57,8 +57,10 @@ fn App() -> impl IntoView {
                         if let Some(default_loc) = list
                             .iter()
                             .find(|l| {
-                                l.postcode == "2000" && l.suburb.eq_ignore_ascii_case("Sydney")
+                                l.postcode == "3129"
+                                    && l.suburb.eq_ignore_ascii_case("Mont Albert North")
                             })
+                            .or_else(|| list.iter().find(|l| l.postcode == "3129"))
                             .or_else(|| list.first())
                             .cloned()
                         {

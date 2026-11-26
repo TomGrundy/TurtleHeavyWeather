@@ -10,7 +10,7 @@ use thw_core::{
 use crate::{FetchContext, SourceError, SourceOutput, WeatherSource};
 
 pub const DEFAULT_OPEN_METEO_BASE_URL: &str = "https://api.open-meteo.com";
-pub const DEFAULT_OPEN_METEO_BATCH_SIZE: usize = 50;
+pub const DEFAULT_OPEN_METEO_BATCH_SIZE: usize = 100;
 
 const HOURLY_FIELDS: &str = "temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,relative_humidity_2m,shortwave_radiation";
 
