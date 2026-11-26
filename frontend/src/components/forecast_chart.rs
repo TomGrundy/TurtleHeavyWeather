@@ -1,12 +1,8 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-
 use chrono::{DateTime, Utc};
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::time::format_local_hhmm;
-
-static NEXT_GRAD_ID: AtomicUsize = AtomicUsize::new(1);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChartPoint {
@@ -178,11 +174,6 @@ pub fn InteractiveForecastChart(
         Vec::new()
     };
 
-    let grad_id = format!(
-        "rainAreaGrad-{}",
-        NEXT_GRAD_ID.fetch_add(1, Ordering::Relaxed)
-    );
-    let grad_fill = format!("url(#{grad_id})");
     let y_bounds = Some((pad_t, bottom_y));
     let rain_area_d = build_area_path_clamped(&rain_pts, bottom_y, y_bounds);
     let rain_line_d = build_smooth_curve_path_clamped(&rain_pts, y_bounds);
@@ -303,20 +294,13 @@ pub fn InteractiveForecastChart(
                     }
                 }
             >
-                <defs>
-                    <linearGradient id=grad_id x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="rgba(96, 165, 250, 0.42)" />
-                        <stop offset="100%" stop-color="rgba(96, 165, 250, 0.06)" />
-                    </linearGradient>
-                </defs>
-
                 <line x1=pad_l y1=pad_t x2={width - pad_r} y2=pad_t class="chart-grid" />
                 <line x1=pad_l y1={pad_t + plot_h / 2.0} x2={width - pad_r} y2={pad_t + plot_h / 2.0} class="chart-grid" />
                 <line x1=pad_l y1=bottom_y x2={width - pad_r} y2=bottom_y class="chart-axis" />
 
                 {has_rain.then(|| view! {
                     <g>
-                        <path d=rain_area_d fill=grad_fill />
+                        <path d=rain_area_d fill="rgba(96, 165, 250, 0.28)" />
                         <path d=rain_line_d fill="none" stroke="rgba(96, 165, 250, 0.7)" stroke-width="1.5" />
                     </g>
                 })}
