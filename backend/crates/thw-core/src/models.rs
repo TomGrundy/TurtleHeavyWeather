@@ -113,6 +113,14 @@ pub struct TempSpread {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UvSummary {
+    pub index: f64,
+    pub category: String,
+    pub station_name: String,
+    pub observed_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BestEstimate {
     pub valid_at: DateTime<Utc>,
     pub feels_like_c: f64,
@@ -120,6 +128,8 @@ pub struct BestEstimate {
     pub feels_like_sun_c: Option<f64>,
     pub temp_c: f64,
     pub rain: RainSummary,
+    #[serde(default)]
+    pub uv: Option<UvSummary>,
     pub confidence: ConfidenceLevel,
     pub spread: TempSpread,
     pub source_count: usize,

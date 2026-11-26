@@ -44,6 +44,7 @@ fn sample_bundle(node: MeshNode, generated_at: DateTime<Utc>) -> NodeWeatherBund
                 expected_mm: 0.1,
                 is_raining_now: false,
             },
+            uv: None,
             confidence: ConfidenceLevel::High,
             spread: TempSpread {
                 feels_like_min_c: 20.5,

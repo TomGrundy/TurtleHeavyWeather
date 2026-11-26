@@ -8,6 +8,7 @@ use thw_core::{
     aggregate_node_bundle, evaluate_regression, AggregationConfig, MeshNode, NodeWeatherBundle,
     RegressionForecastInput, RegressionSummary, SourceReport,
 };
+use thw_sources::arpansa::ArpansaUvSource;
 use thw_sources::bom::{BomFtpObsSource, BomFtpXmlSource, BomObsJsonSource, BomWebApiSource};
 use thw_sources::keyed::{
     OpenWeatherMapSource, PirateWeatherSource, TomorrowIoSource, WeatherApiSource,
@@ -61,6 +62,7 @@ pub fn default_sources() -> Vec<Box<dyn WeatherSource>> {
         Box::new(OpenWeatherMapSource::from_env()),
         Box::new(TomorrowIoSource::from_env()),
         Box::new(BomHtmlScraperSource::default()),
+        Box::new(ArpansaUvSource::default()),
     ]
 }
 

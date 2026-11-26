@@ -6,7 +6,7 @@ use thw_core::{
 };
 use thw_frontend::client::WeatherDataClient;
 use thw_frontend::components::{
-    BestEstimateCard, RegressionPanel, SevenDayOutlook, SourceAccordions,
+    BestEstimateCard, RainRadarPanel, RegressionPanel, SevenDayOutlook, SourceAccordions,
 };
 use thw_frontend::geolocation::request_browser_location;
 
@@ -300,10 +300,17 @@ fn App() -> impl IntoView {
                             let sources = b.sources.clone();
                             let hourly = b.hourly_best_estimate.clone();
                             let sel = selected.get();
+                            let node_lat = b.node.lat;
+                            let node_lon = b.node.lon;
+                            let node_name = sel
+                                .as_ref()
+                                .map(|l| l.suburb.clone())
+                                .unwrap_or_else(|| b.node.name.clone());
                             view! {
                                 <div>
                                     <BestEstimateCard bundle=b selected_location=sel />
                                     <SevenDayOutlook hourly=hourly />
+                                    <RainRadarPanel lat=node_lat lon=node_lon location_name=node_name />
                                     <SourceAccordions sources=sources />
                                 </div>
                             }

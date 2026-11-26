@@ -4,7 +4,9 @@ pub mod geo;
 pub mod models;
 pub mod regression;
 
-pub use aggregate::{aggregate_node_bundle, classify_rain, AggregationConfig};
+pub use aggregate::{
+    aggregate_node_bundle, classify_rain, classify_uv_category, AggregationConfig,
+};
 pub use feels_like::{
     compute_apparent_temp_c, compute_outdoor_sun_apparent_temp_c, ensure_feels_like,
     normalize_feels_like_bom_steadman,

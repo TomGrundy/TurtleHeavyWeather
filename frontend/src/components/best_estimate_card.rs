@@ -16,6 +16,20 @@ fn rain_badge_class(verdict: RainVerdict) -> &'static str {
     }
 }
 
+fn uv_badge_class(index: f64) -> &'static str {
+    if index >= 11.0 {
+        "uv-badge uv-extreme"
+    } else if index >= 8.0 {
+        "uv-badge uv-very-high"
+    } else if index >= 6.0 {
+        "uv-badge uv-high"
+    } else if index >= 3.0 {
+        "uv-badge uv-moderate"
+    } else {
+        "uv-badge uv-low"
+    }
+}
+
 fn confidence_label(conf: ConfidenceLevel) -> &'static str {
     match conf {
         ConfidenceLevel::High => "High agreement",
@@ -97,6 +111,19 @@ pub fn BestEstimateCard(
                     <div class="metric-label">"Feels Like"</div>
                     <div class="metric-value">{format!("{:.1}°C", est.feels_like_c)}</div>
                     <div class="metric-sub">{sun_sub}</div>
+                    {est.uv.as_ref().map(|uv| {
+                        let badge_cls = uv_badge_class(uv.index);
+                        view! {
+                            <div class="metric-sub uv-inline">
+                                <span class=badge_cls>
+                                    {format!("UV {:.1} · {}", uv.index, uv.category)}
+                                </span>
+                                <span class="uv-station">
+                                    {format!(" ({})", uv.station_name)}
+                                </span>
+                            </div>
+                        }
+                    })}
                 </div>
 
                 <div class="metric-box">

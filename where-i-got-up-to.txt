@@ -1,0 +1,243 @@
+> In the turtleheavyweather directory, please begin planning the following:
+  Come up with a plan to build out a monorepo that:
+  Uses a rust backend and leptos or similar rust web Frontend
+  Finds all accessible weather APIs and web scrapable weather reports for Australia.
+  Runs a regular-interval job to collect weather data for Australia from all accessible data locations.
+  Renders that in a web ui that first collates all the data together to make a best-estimate for the weather, leading first with Feels Like Temperature, regular temperature and if it’s
+  going to rain for a given location, e.g. a suburb or a postcode, also using a browsers API to report a users location.
+  Should then, below the aggregate weather estimate based off all the disparate data sources, list out the weather in collapsible submenus for each of the weather sources.
+  Doesn’t need to store historic data. Just needs a lightweight data store to store the forecast data it gets and maybe the prior weeks worth of data, and maybe use that to help me do
+  regressions on if the aggregate weather data estimates matched the real estimate so I can later make optimizations.
+  Doesn’t need user accounts or login or anything.
+  Determine if it is possible to build this purely as a GitHub Pages webpage that then fetches its data in GitHub actions and stores its data in GitHub as it does its data sync at
+  regularly scheduled intervals.
+  If this isn’t possible, plan on how I would host the backend of this on my home server and have the Frontend hosted there as well.
+  Ensure there are tests and GitHub actions CI to run the tests on each pull request.
+  Should use spec driven development such that there are markdown files to track the work in progress and the planned work still to do, so they I can use an agent factory to build this
+  out bit by bit over time.
+  Plan out the work items as if they were Jira-esque tickets and persist those tickets as markdown files in the monorepo, in some separate planning and development folder, so there would
+  be a front end folder, back end folder and docs folder.
+  In general ensure the project has appropriate documentation for its APIs and features.
+  Come up with a plan on how to build that out with subagents, and also ask any clarifying questions if you hit any ambiguities when creating the plan.
+
+○ Thought for 33.1s (The current directory is empty; the user requests a plan for building a monorepo within it. It's crucial to distinguish between immediate action and the planning...)
+● Ran (ls -la /home/bairrd/repos/study && ls -la /home/bairrd/repos/study/turtleheavyweather 2>/dev/null || echo "turtleheavyweather does not exist yet")
+● Explored 5 searches (+2 · free weather APIs Au... · Australian suburbs p... · GitHub Pages static site GitHub Actions scheduled cron data sync limits repository size)
+● Ran (git status 2>&1; rustc --version 2>&1; cargo --version 2>&1; trunk --version 2>&1) failed
+● Edited 34 files (README.md, README.md, README.md, +31)
+● Ran (find /home/bairrd/repos/study/turtleheavyweather -type f | sort) (ctrl+o to expand)
+
+▸ Thought for 4s, 321 tokens
+
+  I have initialized the spec-driven planning scaffold, technical specifications, and Jira-esque ticket backlog inside turtleheavyweather.
+  ──────
+  1. Monorepo & Spec-Driven Structure Created
+
+  • Root & Crate Skeletons:
+      • turtleheavyweather/README.md — Monorepo overview and directory map
+      • turtleheavyweather/backend/README.md — Planned Cargo workspace (thw-core, thw-sources, thw-store, thw-collector, thw-server)
+      • turtleheavyweather/frontend/README.md — Planned Leptos (Rust/WASM) UI with dual transport (StaticJsonClient / HttpApiClient)
+  • Documentation (docs/):
+      • turtleheavyweather/docs/architecture.md — System design, Australian station/hub mesh, Feels-Like/Temp/Rain aggregation pipeline
+      • turtleheavyweather/docs/hosting-feasibility.md — Detailed GitHub Pages + Actions vs. Home Server feasibility analysis
+      • turtleheavyweather/docs/weather-sources.md — Catalog of Australian APIs, BOM feeds, rate limits, and scraper compliance gates
+      • turtleheavyweather/docs/data-and-regression-spec.md — Lightweight 7-day SQLite rolling schema, auto-pruning, and MAE/RMSE/Bias/Brier regression spec
+      • turtleheavyweather/docs/api-spec.md — Unified JSON contracts, Home Server Axum endpoints, and navigator.geolocation flow
+      • turtleheavyweather/docs/agent-factory-and-subagents.md — Parallel subagent wave plan and verification rules
+  • Planning & Jira-esque Tickets (planning/):
+      • turtleheavyweather/planning/README.md — Agent-factory workflow rules
+      • turtleheavyweather/planning/BOARD.md — Live status board (Ready, Backlog, In Progress, Review, Done)
+      • planning/epics/ (EPIC-01 through EPIC-06)
+      • planning/tickets/ (THW-001 through THW-016)
+
+  ──────
+  2. Feasibility Verdict: Pure GitHub Pages + GitHub Actions vs. Home Server
+  Yes, a pure GitHub Pages + GitHub Actions deployment is possible, with important architectural constraints (analyzed in turtleheavyweather/docs/hosting-feasibility.md):
+  1. Spatial Mesh Instead of 15,000 Live Queries: You cannot query APIs per suburb across all ~15,000+ Australian suburbs or hold secret API keys in a browser WASM app. Instead, the
+  Actions job collects data on a representative Australian BOM station / regional hub mesh (~100–250 nodes), and the browser maps any suburb, postcode, or GPS coordinate to its nearest
+  node(s) and fetches a small sharded JSON file (nodes/{node_id}.json).
+  2. Preventing Git History Bloat: Committing rolling forecasts/observations to main on every cron run will bloat .git toward GitHub's 1 GB soft / 5 GB hard limit. The workaround is
+  storing the rolling 7-day SQLite weather.db on a force-pushed single-commit orphan branch (data-state) (or GitHub Release asset) and publishing the built WASM site + JSON shards via
+  actions/deploy-pages.
+  3. Cron Jitter & Limits: GitHub Actions schedule runs best-effort (often delayed 15–90+ minutes), auto-disables after 60 days without human commits, and only gives unlimited minutes
+  on public repos (private repos have 2,000 mins/month). Also, commercial weather sites often block shared Azure/GitHub runner IPs.
+  4. Home Server Path (Dual-Target Shared Core): Because thw-core, thw-sources, thw-store, and the Leptos frontend share the same contracts, THW-012 provides a clean Home Server path
+  (thw-server Axum binary + SQLite WAL + Caddy/Tailscale/Docker/systemd) if you want strict sub-hourly syncs, residential-IP scraping, or on-demand caching.
+  ──────
+  3. Subagent Build-Out Plan
+  Detailed in turtleheavyweather/docs/agent-factory-and-subagents.md, the tickets decompose into 6 parallel waves:
+  • Wave 1 (inherit): THW-001 (Cargo workspace + PR CI) & THW-002 (Australian suburb/postcode index + node mesh).
+  • Wave 2 (parallel share): THW-003 (thw-core domain + Steadman feels-like) alongside THW-013 (Leptos app shell + mock-backed suburb/postcode picker).
+  • Wave 3 (parallel share, 1 module per agent): THW-004 (BOM JSON/FTP), THW-005 (Open-Meteo + MET.no), THW-006 (keyed APIs + compliant scrapers), THW-008 (7-day SQLite store).
+  • Wave 4 (parallel share): THW-007 (Best-Estimate aggregation), THW-009 (7-day regression evaluator), THW-014 & THW-015 (Geolocation + Hero Card + Source Accordions).
+  • Wave 5 (share): THW-010 (thw-collector), THW-011 (GitHub Pages workflow) and/or THW-012 (Home Server Axum + Docker/systemd).
+  • Wave 6 (inherit): THW-016 (Regression diagnostics UI, E2E verification, doc sync).
+
+  (Note: rustc, cargo, and trunk are not currently installed in this environment, so Wave 1 implementation will need the Rust toolchain installed or executed in an environment with
+  Rust + wasm32-unknown-unknown + trunk.)
+  ──────
+  4. Clarifying Questions Before Execution
+  Before kicking off Wave 1 (THW-001 / THW-002), could you clarify these ambiguities?
+
+  1. Primary Hosting Preference: Knowing the trade-offs above (cron jitter, 60-day inactivity pause, public-repo preference, mesh-only coverage), do you want to start with GitHub Pages +
+  GitHub Actions (THW-011), go straight to Home Server (THW-012), or implement both behind the shared core? If Home Server, what OS/runtime do you prefer (e.g., Docker Compose, bare-
+  metal Linux systemd, Tailscale vs public Caddy TLS)?
+  2. Sync Cadence & Geographic Granularity: How frequently do you want weather refreshed (e.g., every 30 min, 1 hour, or 3 hours), and is a ~100–250 node Australian station/hub mesh
+  sufficient, or do you want on-demand fetching for any arbitrary suburb?
+  3. Keyed APIs & Scraping Boundaries:
+      • Do you plan to supply free-tier API keys for WeatherAPI.com, Pirate Weather, OpenWeatherMap, or Tomorrow.io, or keep the default strictly zero-key (BOM JSON/FTP + Open-Meteo
+      BOM ACCESS/ECMWF/GFS + MET Norway)?
+      • For web scraping (THW-006), should we strictly restrict scrapers to robots.txt / Terms-of-Service-compliant static HTML pages (e.g., BOM HTML tables), or are there specific
+      Australian weather websites you had in mind?
+  4. Regression Ground Truth & Horizon: Is BOM AWS station JSON observations (air_temp, apparent_t, rain_trace) acceptable as the ground-truth baseline for scoring forecasts (0–6h,
+  6–24h, 24–72h), and is 7 days the exact rolling window you want?
+  5. Repository Visibility & Rust Toolchain: Will this monorepo be a public GitHub repository (important for unlimited Actions minutes + Pages on free plans), and do you want me to
+  begin implementing THW-001 next once Rust/Cargo is available?
+
+────────────────────────────────────────────────────────────
+> 1. I would like you to build this out hosted on Github pages and actions, but ensure I can in the future fallback to something hosted on my personal NUC I have at home.
+  2. I think every 60 minutes would be okay.
+  3. Give me a list, post building this out, of what API keys I need and where to get them, and where to put them into the Github's secrets UI and what to name them there.
+  4. I want the ground truth to be whichever historical data was most accurate.
+  5. This will be a public repo
+
+○ Thought for 26.6s (Confirming the five decisions are documented in the specified specs and tickets. The response will include the API keys list, signup locations, free-tier quotas,...)
+● Ran 2 commands (+1 · ls -la /mnt/c/Users/me/.cargo/bin 2>&1; which cargo.exe rustc.exe 2>&1; ls -la /usr/local/cargo /opt/rust 2>&1: failed)
+● Edited 8 files (api-keys-and-secrets.md, README.md, data-and-regression-spec.md, +5) (ctrl+o to expand)
+
+  I have locked all five decisions into the TurtleHeavyWeather specs and tickets, and added a dedicated API keys & secrets guide.
+  1. Plan & Spec Updates Applied
+  • Primary Hosting + NUC Fallback (turtleheavyweather/docs/hosting-feasibility.md, THW-011, THW-012):
+      • Elevated THW-011 (Public GitHub Pages + 60-minute scheduled GitHub Actions using staggered cron: '17 * * * *' and an orphan data-state branch) to P0.
+      • Kept THW-012 (thw-server Axum API + static/SSR host + Docker/systemd/Caddy for your personal NUC) as the drop-in P1 fallback sharing the exact same thw-core, thw-sources, and
+      thw-store crates.
+  • Ground Truth Selection (turtleheavyweather/docs/data-and-regression-spec.md, THW-009):
+      • Configured a quality-ranked observation hierarchy: Tier 1 physical BOM AWS station measurements (bom_obs_json, or nearest station within 25 km), falling back to Tier 2 Open-
+      Meteo ERA5/reanalysis or multi-source observation consensus with sanity validation when a physical station is offline, recording source_id and quality_rank per row.
+  • Work Board Updated: turtleheavyweather/planning/BOARD.md.
+  ──────
+  2. API Keys & GitHub Secrets Reference (turtleheavyweather/docs/api-keys-and-secrets.md)
+  The app is designed to run out of the box with zero keys (Open-Meteo BOM ACCESS/ECMWF/GFS, BOM public JSON/FTP, and MET Norway). Adding the optional free keys below increases
+  forecast diversity:
+   Provider                        │ GitHub Secret Name    │ Where to Get Key                                     │ Free Tier                             │ Card Needed?
+  ─────────────────────────────────┼───────────────────────┼──────────────────────────────────────────────────────┼───────────────────────────────────────┼─────────────────────────────
+   WeatherAPI.com                  │ THW_WEATHERAPI_KEY    │ https://www.weatherapi.com/signup.aspx               │ 100k calls/month                      │ No
+   Pirate Weather                  │ THW_PIRATEWEATHER_KEY │ https://pirateweather.net/                           │ 10k calls/month                       │ No
+   OpenWeatherMap (Standard 2.5)   │ THW_OWM_KEY           │ https://home.openweathermap.org/users/sign_up        │ 60 calls/min                          │ No (avoid One Call 3.0
+                                   │                       │                                                      │                                       │ unless billing is set)
+   Tomorrow.io                     │ THW_TOMORROW_KEY      │ https://app.tomorrow.io/signup                       │ 500/day, 25/hr (capped to major hubs) │ No
+   WillyWeather (optional paid AU) │ THW_WILLYWEATHER_KEY  │ https://www.willyweather.com.au/info/api.html        │ Paid per-request                      │ Yes
+   Custom User-Agent (recommended) │ THW_USER_AGENT        │ e.g. TurtleHeavyWeather/0.1                          │ N/A                                   │ N/A
+                                   │                       │ (https://github.com/<you>/turtleheavyweather)        │                                       │
+
+  Where to put them in GitHub:
+
+  1. Open your public repository on GitHub → Settings.
+  2. Left sidebar: Security → Secrets and variables → Actions.
+  3. Under Repository secrets, click New repository secret, enter the exact secret name from the table above (e.g., THW_WEATHERAPI_KEY), paste the value, and click Add secret.
+
+  (When you later move to your personal NUC, those exact same variable names go into .env for Docker Compose or systemd.)
+  ──────
+  3. Blocker Before Building Wave 1
+
+  I checked the local environment (rustc, cargo, rustup, trunk) and no Rust toolchain is currently installed on this machine, and downloading rustup / Cargo crates from crates.io
+  requires network access outside the sandbox.
+
+  Would you like me to:
+
+  • Install rustup (stable + wasm32-unknown-unknown) and trunk (which will prompt for network permission outside the sandbox) and immediately start building out Wave 1 → Wave 6 with
+  subagents, or
+  • Wait while you install Rust (rustup, wasm32-unknown-unknown, trunk) locally first?
+
+────────────────────────────────────────────────────────────
+> Give me the commands needed to install the complete rust toolchain you need
+
+● Ran (cat /etc/os-release; which curl cc gcc pkg-config git 2>&1; dpkg -l | grep -E 'build-essential|pkg-config|libssl-dev|libsqlite3-dev' 2>&1 || true) (ctrl+o to expand)
+
+▸ Thought for 4s, 257 tokens
+  On Ubuntu 22.04 LTS (build-essential, curl, gcc, and git are already present, while pkg-config, libssl-dev, and libsqlite3-dev are missing), run these commands in your WSL terminal:
+  1. Install System Build Dependencies
+
+    sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev libsqlite3-dev
+
+  2. Install rustup + Stable Toolchain + WASM Target + clippy / rustfmt
+
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+    source "$HOME/.cargo/env"
+    rustup target add wasm32-unknown-unknown
+    rustup component add clippy rustfmt
+  3. Install trunk (Leptos WASM Bundler) & wasm-bindgen-cli
+
+    cargo install --locked trunk wasm-bindgen-cli
+
+  (Optional faster binary install via cargo-binstall instead of compiling from source:)
+
+    curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+    cargo binstall -y trunk wasm-bindgen-cli
+
+  4. Verify Installation
+    rustc --version && cargo --version && trunk --version && rustup target list --installed
+
+  Once those succeed, let me know and we can kick off Wave 1 (THW-001 & THW-002)! (Note: when building/testing later, cargo will also need network access the first time to fetch crates
+  from crates.io, or we can pre-fetch dependencies once Cargo.toml is created.)
+────────────────────────────────────────────────────────────
+> heres the result of step 4:
+  bairrd@bairrdPC:~$  rustc --version && cargo --version && trunk --version && rustup target list --installed
+  rustc 1.100.0 (0ef1bc386 2026-11-09)
+  cargo 1.100.0 (3acc79c0c 2026-11-05)
+  trunk 0.22.2
+  wasm32-unknown-unknown
+  x86_64-unknown-linux-gnu
+
+○ Thought for 1m 0s (Success: both the crate caching and the large data download completed as expected. Confirmed offline execution of all subsequent processes within the standard sa...)
+● Ran (export PATH="$HOME/.cargo/bin:$PATH" rustc --version && cargo --version && trunk --version git -C /home/bairrd/repos/study/turtleheavyweather status 2>&1 || true)
+● Explored 2 searches (crates.io leptos lat... · crates.io axum rusqlite suppaftp quick-xml scraper wiremock latest versions 2025 2026)
+… 30 more actions (1 search, 23 edits, 5 commands, 1 task: 1 failed) …
+● Edited 1 file (build_locations_index.py)
+● Ran (export PATH="$HOME/.cargo/bin:$PATH" python3 /home/bairrd/repos/study/turtleheavyweather/scripts/build_locations_index.py /tmp/au_postcodes.json && \ cd /...) (ctrl+o to expand)
+
+▸ Thought for 4s, 228 tokens
+
+  Launched the Australian suburb/postcode index generator (scripts/build_locations_index.py) and initial cold Cargo build/check for Wave 1 (THW-001 and THW-002); waiting for
+  compilation to complete.
+
+○ Thought for 4.6s (Initial hypothesis was that a large dataset would lead to significant storage or compilation issues. The observed gzipped size of the location data is surprisingl...)
+● Ran (export PATH="$HOME/.cargo/bin:$PATH" which wasm-bindgen wasm-opt 2>&1; cd /home/bairrd/repos/study/turtleheavyweather/frontend && trunk build --offline 2>...) (ctrl+o to expand)
+
+  Generated data/locations_index.json (18,527 Australian suburbs/postcodes, ~327 KB gzipped) and verified the offline Rust workspace checks; waiting for the initial trunk build --
+  offline check to complete.
+
+○ Thought for 16.8s (Weather source trait defined, along with shared error types and context, enabling subagents to immediately implement adapters. App shell structure is initialized...)
+● Edited 15 files (index.html, styles.css, lib.rs, +12)
+● Ran (export PATH="$HOME/.cargo/bin:$PATH" cd /home/bairrd/repos/study/turtleheavyweather && \ cargo clippy --workspace --exclude thw-frontend --all-targets --offline -- -D w...) failed
+● Edited 1 file (geo.rs)
+● Ran (export PATH="$HOME/.cargo/bin:$PATH" cd /home/bairrd/repos/study/turtleheavyweather && \ cargo fmt --all && \ cargo clippy --workspace --exclude thw-front...) (ctrl+o to expand)
+
+  Wave 2 (thw-core domain + thw-sources traits + frontend Leptos shell) passed clippy; running workspace tests and trunk build --offline now.
+
+○ Thought for 18.9s (Rust engineer subagent initialized with write tools enabled. Four parallel subagents launched for Wave 3. Initially considered potential `cargo` lock contention...)
+● Edited 9 files (THW-003-core-domain-and-source-trait.md, THW-013-leptos-app-shell-and-location-picker.md, BOARD.md, +6)
+● Spawned 4 subagents (ctrl+o to expand)
+
+▸ Thought for 5s, 465 tokens
+
+  Wave 2 (thw-core domain contracts + thw-sources trait + frontend Leptos app shell with suburb/postcode search) is complete and verified (clippy, unit tests, and trunk build --offline
+  all passed).
+
+  Launched Wave 3 across 4 parallel subagents:
+
+  1. BOM Integration Engineer (THW-004): BOM Public JSON observations (with 9am rain-trace reset handling), Anonymous FTP AMOC XML forecasts, and optional BOM web API.
+  2. Open Weather API Engineer (THW-005): Open-Meteo (BOM ACCESS-G, ECMWF IFS, NOAA GFS with coordinate batching) and MET Norway Locationforecast 2.0.
+  3. Keyed API & Scraper Engineer (THW-006): Env-var gated WeatherAPI/PirateWeather/OpenWeatherMap/Tomorrow.io adapters + rate caps + robots.txt-compliant BOM HTML scraper.
+  4. SQLite Storage Engineer (THW-008): Lightweight 7-day rolling SQLite store (WAL mode), idempotent upserts, and automated retention pruning.
+
+  Waiting for the Wave 3 subagents to finish.
+
+⚠ Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 167h17m41s.
+Error ID: 08dc25eb-36e3-45fa-a256-50d5d2912a55-182
+
+⚠ Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 167h17m34s.
+Error ID: 08dc25eb-36e3-45fa-a256-50d5d2912a55-184
+
+⚠ Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 167h17m19s.
+Error ID: 08dc25eb-36e3-45fa-a256-50d5d2912a55-187

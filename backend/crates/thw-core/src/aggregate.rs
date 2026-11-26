@@ -5,7 +5,7 @@ use chrono::{DateTime, Duration, Timelike, Utc};
 use crate::feels_like::{compute_outdoor_sun_apparent_temp_c, normalize_feels_like_bom_steadman};
 use crate::models::{
     BestEstimate, ConfidenceLevel, HourlyEstimate, MeshNode, NodeWeatherBundle, RainSummary,
-    RainVerdict, SourceKind, SourceReport, TempSpread, WeatherPoint,
+    RainVerdict, SourceKind, SourceReport, TempSpread, UvSummary, WeatherPoint,
 };
 
 #[derive(Debug, Clone)]
@@ -79,6 +79,39 @@ where
     } else {
         None
     }
+}
+
+pub fn classify_uv_category(index: f64) -> &'static str {
+    if index >= 11.0 {
+        "Extreme"
+    } else if index >= 8.0 {
+        "Very High"
+    } else if index >= 6.0 {
+        "High"
+    } else if index >= 3.0 {
+        "Moderate"
+    } else {
+        "Low"
+    }
+}
+
+fn parse_uv_summary_from_report(report: &SourceReport) -> Option<UvSummary> {
+    let summary = report.current.summary.as_deref()?;
+    // Expected format: "UV 5.3 (Moderate) · Melbourne"
+    let rest = summary.strip_prefix("UV ")?;
+    let (idx_str, after_idx) = rest.split_once(' ')?;
+    let index: f64 = idx_str.parse().ok()?;
+    let station_name = after_idx
+        .split_once("· ")
+        .map(|(_, s)| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "ARPANSA".to_string());
+    Some(UvSummary {
+        index,
+        category: classify_uv_category(index).to_string(),
+        station_name,
+        observed_at: report.current.valid_at,
+    })
 }
 
 pub fn classify_rain(prob_pct: f64, expected_mm: f64, is_raining_now: bool) -> RainSummary {
@@ -182,10 +215,15 @@ pub fn aggregate_node_bundle(
         .map(|(v, _)| *v)
         .fold(f64::NEG_INFINITY, f64::max);
 
+    let weather_source_count = active
+        .iter()
+        .filter(|r| r.current.temp_c.is_some() || r.current.feels_like_c.is_some())
+        .count();
+
     let temp_spread = (temp_max_c - temp_min_c).max(0.0);
-    let confidence = if active.len() >= 3 && temp_spread <= 3.0 {
+    let confidence = if weather_source_count >= 3 && temp_spread <= 3.0 {
         ConfidenceLevel::High
-    } else if active.len() >= 2 && temp_spread <= 5.0 {
+    } else if weather_source_count >= 2 && temp_spread <= 5.0 {
         ConfidenceLevel::Medium
     } else {
         ConfidenceLevel::Low
@@ -200,12 +238,18 @@ pub fn aggregate_node_bundle(
         .filter(|s| *s >= 50.0)
         .map(|s| compute_outdoor_sun_apparent_temp_c(feels_like_c, s));
 
+    let uv = active
+        .iter()
+        .find(|r| r.source_id == "arpansa_uv")
+        .and_then(|r| parse_uv_summary_from_report(r));
+
     let current_best_estimate = BestEstimate {
         valid_at: now,
         feels_like_c,
         feels_like_sun_c,
         temp_c,
         rain: classify_rain(rain_prob_pct, expected_mm, is_raining_now),
+        uv,
         confidence,
         spread: TempSpread {
             feels_like_min_c,
@@ -213,7 +257,7 @@ pub fn aggregate_node_bundle(
             temp_min_c,
             temp_max_c,
         },
-        source_count: active.len(),
+        source_count: weather_source_count.max(active.len().min(1)),
     };
 
     let mut hourly_buckets: BTreeMap<DateTime<Utc>, Vec<(&WeatherPoint, f64)>> = BTreeMap::new();
