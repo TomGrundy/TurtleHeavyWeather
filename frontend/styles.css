@@ -433,3 +433,39 @@ body {
   color: var(--muted);
   font-weight: 600;
 }
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding-left: calc(0.45rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(0.45rem + env(safe-area-inset-right, 0px));
+  }
+
+  .hero-card {
+    padding: 0.95rem 0.65rem;
+    border-radius: 12px;
+  }
+
+  .source-body {
+    padding: 0.75rem 0.55rem;
+  }
+
+  .chart-card {
+    margin-left: -0.65rem;
+    margin-right: -0.65rem;
+    padding: 0.65rem 0.25rem 0.45rem;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .source-body .chart-card {
+    margin-left: -0.55rem;
+    margin-right: -0.55rem;
+  }
+
+  .chart-header,
+  .chart-tooltip-bar {
+    margin-left: 0.35rem;
+    margin-right: 0.35rem;
+  }
+}

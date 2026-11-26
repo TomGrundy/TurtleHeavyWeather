@@ -117,9 +117,9 @@ pub fn InteractiveForecastChart(
     }
 
     let width = 760.0_f64;
-    let height = 225.0_f64;
-    let pad_l = 42.0_f64;
-    let pad_r = if has_rain { 42.0_f64 } else { 18.0_f64 };
+    let height = 235.0_f64;
+    let pad_l = 32.0_f64;
+    let pad_r = if has_rain { 34.0_f64 } else { 14.0_f64 };
     let pad_t = 18.0_f64;
     let pad_b = 32.0_f64;
     let plot_w = width - pad_l - pad_r;
