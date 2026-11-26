@@ -1,8 +1,9 @@
+use chrono::Duration;
 use leptos::prelude::*;
 use thw_core::{SourceKind, SourceReport};
 
 use crate::components::{ChartPoint, InteractiveForecastChart};
-use crate::time::format_local_short;
+use crate::time::{format_local_short, now_utc};
 
 fn kind_label(kind: SourceKind) -> &'static str {
     match kind {
@@ -55,10 +56,28 @@ pub fn SourceAccordions(sources: Vec<SourceReport>) -> impl IntoView {
                     .summary
                     .clone()
                     .unwrap_or_else(|| "No text summary".to_string());
-                let chart_points: Vec<ChartPoint> = src
+                let now = now_utc();
+                let window_start = now - Duration::minutes(30);
+                let window_end = now + Duration::hours(24);
+                let upcoming_24h: Vec<_> = src
                     .hourly
                     .iter()
-                    .take(24)
+                    .filter(|pt| pt.valid_at >= window_start && pt.valid_at <= window_end)
+                    .cloned()
+                    .collect();
+                let chart_slice: Vec<_> = if upcoming_24h.len() >= 2 {
+                    upcoming_24h
+                } else {
+                    src.hourly
+                        .iter()
+                        .filter(|pt| pt.valid_at >= window_start)
+                        .take(8)
+                        .cloned()
+                        .collect()
+                };
+
+                let chart_points: Vec<ChartPoint> = chart_slice
+                    .iter()
                     .map(|pt| ChartPoint {
                         valid_at: pt.valid_at,
                         temp_c: pt.temp_c,
@@ -68,7 +87,7 @@ pub fn SourceAccordions(sources: Vec<SourceReport>) -> impl IntoView {
                         rain_mm: pt.rain_mm,
                     })
                     .collect();
-                let hourly_rows = src.hourly.into_iter().take(8).collect::<Vec<_>>();
+                let hourly_rows = chart_slice.into_iter().take(8).collect::<Vec<_>>();
                 let source_url = src.source_url.clone();
 
                 view! {
