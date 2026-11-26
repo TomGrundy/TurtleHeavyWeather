@@ -36,6 +36,19 @@ fn to_12h(hour24: u32) -> (u32, &'static str) {
     (h12, ampm)
 }
 
+/// Returns current UTC time using `js_sys::Date::now()` on wasm32 or `Utc::now()` on native.
+pub fn now_utc() -> DateTime<Utc> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let ms = js_sys::Date::now() as i64;
+        DateTime::from_timestamp_millis(ms).unwrap_or_default()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        Utc::now()
+    }
+}
+
 /// Formats `dt` as `h:mm AM/PM` in the browser's local timezone.
 pub fn format_local_hhmm(dt: DateTime<Utc>) -> String {
     #[cfg(target_arch = "wasm32")]

@@ -5,7 +5,9 @@ use thw_core::{
     NodeWeatherBundle, RegressionSummary,
 };
 use thw_frontend::client::WeatherDataClient;
-use thw_frontend::components::{BestEstimateCard, RegressionPanel, SourceAccordions};
+use thw_frontend::components::{
+    BestEstimateCard, RegressionPanel, SevenDayOutlook, SourceAccordions,
+};
 use thw_frontend::geolocation::request_browser_location;
 
 const STORAGE_KEY_LOCATION: &str = "thw_selected_location_v1";
@@ -228,10 +230,12 @@ fn App() -> impl IntoView {
 
                         {move || bundle.get().map(|b| {
                             let sources = b.sources.clone();
+                            let hourly = b.hourly_best_estimate.clone();
                             let sel = selected.get();
                             view! {
                                 <div>
                                     <BestEstimateCard bundle=b selected_location=sel />
+                                    <SevenDayOutlook hourly=hourly />
                                     <SourceAccordions sources=sources />
                                 </div>
                             }

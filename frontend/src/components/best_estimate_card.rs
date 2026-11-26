@@ -1,8 +1,9 @@
+use chrono::Duration;
 use leptos::prelude::*;
 use thw_core::{ConfidenceLevel, LocationIndexEntry, NodeWeatherBundle, RainVerdict};
 
 use crate::components::{ChartPoint, InteractiveForecastChart};
-use crate::time::{format_local_hhmm, format_local_short};
+use crate::time::{format_local_hhmm, format_local_short, now_utc};
 
 fn rain_badge_class(verdict: RainVerdict) -> &'static str {
     match verdict {
@@ -50,8 +51,22 @@ pub fn BestEstimateCard(
             )
         });
 
-    let hourly_chart: Vec<ChartPoint> = bundle
-        .hourly_best_estimate
+    let cutoff = now_utc() - Duration::minutes(30);
+    let upcoming: Vec<_> = {
+        let filtered: Vec<_> = bundle
+            .hourly_best_estimate
+            .iter()
+            .filter(|h| h.valid_at >= cutoff)
+            .cloned()
+            .collect();
+        if filtered.is_empty() {
+            bundle.hourly_best_estimate.clone()
+        } else {
+            filtered
+        }
+    };
+
+    let hourly_chart: Vec<ChartPoint> = upcoming
         .iter()
         .take(24)
         .map(|h| ChartPoint {
@@ -63,11 +78,7 @@ pub fn BestEstimateCard(
             rain_mm: Some(h.rain_mm_expected),
         })
         .collect();
-    let hourly_strip = bundle
-        .hourly_best_estimate
-        .into_iter()
-        .take(12)
-        .collect::<Vec<_>>();
+    let hourly_strip = upcoming.into_iter().take(12).collect::<Vec<_>>();
 
     view! {
         <section class="hero-card">

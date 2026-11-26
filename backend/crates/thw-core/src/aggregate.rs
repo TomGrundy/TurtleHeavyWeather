@@ -38,7 +38,7 @@ impl Default for AggregationConfig {
             source_weights,
             max_obs_age_hours: 4,
             max_forecast_age_hours: 18,
-            hourly_horizon_hours: 48,
+            hourly_horizon_hours: 168,
         }
     }
 }
