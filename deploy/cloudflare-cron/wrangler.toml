@@ -1,0 +1,12 @@
+name = "thw-cron-dispatcher"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[triggers]
+crons = ["17 * * * *"]
+
+[vars]
+GITHUB_OWNER = "TomGrundy"
+GITHUB_REPO = "TurtleHeavyWeather"
+GITHUB_WORKFLOW = "sync-and-deploy.yml"
+GITHUB_REF = "main"

@@ -84,6 +84,62 @@ pub fn build_area_path_clamped(
     d
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct RainBar {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+/// Computes thin SVG bar rectangles `(x, y, width, height)` for hourly `rain_mm`
+/// values, anchored at `bottom_y` and scaled up to `bar_max_h` against
+/// `max_rain_mm.max(5.0)` (with a 2px minimum height for any non-zero rain).
+pub fn build_rain_mm_bars(
+    points: &[ChartPoint],
+    pad_l: f64,
+    plot_w: f64,
+    bottom_y: f64,
+    bar_max_h: f64,
+) -> (Vec<RainBar>, f64) {
+    let n = points.len();
+    if n < 2 || plot_w <= 0.0 || bar_max_h <= 0.0 {
+        return (Vec::new(), 0.0);
+    }
+
+    let max_mm = points
+        .iter()
+        .filter_map(|p| p.rain_mm)
+        .fold(0.0_f64, f64::max);
+    if max_mm <= 0.0 {
+        return (Vec::new(), 0.0);
+    }
+
+    let scale_ceil = max_mm.max(5.0);
+    let step_w = plot_w / (n - 1) as f64;
+    let bar_w = (step_w * 0.28).clamp(2.5, 6.0);
+    let max_x = pad_l + plot_w - bar_w;
+
+    let bars = points
+        .iter()
+        .enumerate()
+        .filter_map(|(i, p)| {
+            let mm = p.rain_mm.filter(|&m| m > 0.0)?;
+            let h = ((mm / scale_ceil) * bar_max_h).clamp(2.0, bar_max_h);
+            let cx = pad_l + (i as f64 / (n - 1) as f64) * plot_w;
+            let x = (cx - bar_w / 2.0).clamp(pad_l, max_x);
+            Some(RainBar {
+                x,
+                y: bottom_y - h,
+                width: bar_w,
+                height: h,
+            })
+        })
+        .collect();
+
+    (bars, max_mm)
+}
+
 /// Maps a client X coordinate inside an SVG bounding rect to the nearest hourly index.
 pub fn nearest_index_from_client_x(
     client_x: f64,
@@ -111,8 +167,9 @@ pub fn InteractiveForecastChart(
     let has_feels = points.iter().filter(|p| p.feels_like_c.is_some()).count() >= 2;
     let has_temp = points.iter().filter(|p| p.temp_c.is_some()).count() >= 2;
     let has_rain = points.iter().filter(|p| p.rain_prob_pct.is_some()).count() >= 2;
+    let has_rain_mm = points.iter().any(|p| p.rain_mm.is_some_and(|m| m > 0.0));
 
-    if points.len() < 2 || (!has_feels && !has_temp && !has_rain) {
+    if points.len() < 2 || (!has_feels && !has_temp && !has_rain && !has_rain_mm) {
         return view! { <div /> }.into_any();
     }
 
@@ -179,6 +236,8 @@ pub fn InteractiveForecastChart(
     let rain_line_d = build_smooth_curve_path_clamped(&rain_pts, y_bounds);
     let temp_line_d = build_smooth_curve_path_clamped(&temp_pts, y_bounds);
     let feels_line_d = build_smooth_curve_path_clamped(&feels_pts, y_bounds);
+    let (rain_mm_bars, max_rain_mm) =
+        build_rain_mm_bars(&points, pad_l, plot_w, bottom_y, plot_h * 0.55);
 
     let y_mid_t = (t_min + t_max) / 2.0;
     let temp_ticks = if has_temp || has_feels {
@@ -235,6 +294,9 @@ pub fn InteractiveForecastChart(
                     {has_rain.then(|| view! {
                         <span class="legend-item"><span class="legend-swatch swatch-rain" />"Rain Chance (%)"</span>
                     })}
+                    {has_rain_mm.then(|| view! {
+                        <span class="legend-item"><span class="legend-swatch swatch-rain-mm" />{format!("Rain (mm, peak {max_rain_mm:.1})")}</span>
+                    })}
                 </div>
             </div>
 
@@ -255,12 +317,18 @@ pub fn InteractiveForecastChart(
                             {pt.temp_c.map(|t| view! {
                                 <span>{format!("Actual Temp: {t:.1}°C")}</span>
                             })}
-                            {pt.rain_prob_pct.map(|rp| {
-                                let mm_part = pt.rain_mm.map(|mm| format!(" ({mm:.1} mm)")).unwrap_or_default();
-                                view! {
-                                    <span>{format!("Rain: {rp:.0}%{mm_part}")}</span>
-                                }
-                            })}
+                            {match (pt.rain_prob_pct, pt.rain_mm) {
+                                (Some(rp), Some(mm)) => Some(view! {
+                                    <span>{format!("Rain: {rp:.0}% ({mm:.1} mm)")}</span>
+                                }.into_any()),
+                                (Some(rp), None) => Some(view! {
+                                    <span>{format!("Rain: {rp:.0}%")}</span>
+                                }.into_any()),
+                                (None, Some(mm)) => Some(view! {
+                                    <span>{format!("Rain: {mm:.1} mm")}</span>
+                                }.into_any()),
+                                (None, None) => None,
+                            }}
                         </div>
                     }.into_any()
                 }
@@ -302,6 +370,22 @@ pub fn InteractiveForecastChart(
                     <g>
                         <path d=rain_area_d fill="rgba(96, 165, 250, 0.28)" />
                         <path d=rain_line_d fill="none" stroke="rgba(96, 165, 250, 0.7)" stroke-width="1.5" />
+                    </g>
+                })}
+
+                {(!rain_mm_bars.is_empty()).then(|| view! {
+                    <g class="rain-mm-bars">
+                        {rain_mm_bars.into_iter().map(|bar| view! {
+                            <rect
+                                x=format!("{:.1}", bar.x)
+                                y=format!("{:.1}", bar.y)
+                                width=format!("{:.1}", bar.width)
+                                height=format!("{:.1}", bar.height)
+                                rx="1.5"
+                                ry="1.5"
+                                fill="rgba(56, 189, 248, 0.8)"
+                            />
+                        }).collect_view()}
                     </g>
                 })}
 
@@ -376,5 +460,31 @@ mod tests {
     fn maps_client_x_to_nearest_hourly_index() {
         let idx = nearest_index_from_client_x(380.0, 0.0, 760.0, 760.0, 42.0, 676.0, 24);
         assert_eq!(idx, Some(12));
+    }
+
+    #[test]
+    fn builds_thin_rain_mm_bars_only_for_nonzero_rain() {
+        let now = Utc::now();
+        let make_pt = |mm: Option<f64>| ChartPoint {
+            valid_at: now,
+            temp_c: Some(20.0),
+            feels_like_c: None,
+            feels_like_sun_c: None,
+            rain_prob_pct: None,
+            rain_mm: mm,
+        };
+        let pts = vec![
+            make_pt(Some(0.0)),
+            make_pt(Some(0.2)),
+            make_pt(Some(2.5)),
+            make_pt(None),
+        ];
+        let (bars, max_mm) = build_rain_mm_bars(&pts, 32.0, 600.0, 200.0, 100.0);
+        assert!((max_mm - 2.5).abs() < 1e-9);
+        assert_eq!(bars.len(), 2);
+        // 2.5mm against 5.0mm floor should be half of 100px = 50px
+        assert!((bars[1].height - 50.0).abs() < 1e-6);
+        assert!((bars[1].y - 150.0).abs() < 1e-6);
+        assert!(bars[0].width >= 2.5 && bars[0].width <= 6.0);
     }
 }

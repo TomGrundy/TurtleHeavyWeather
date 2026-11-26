@@ -601,6 +601,7 @@ body {
 .swatch-feels { background: #22d3ee; }
 .swatch-temp { background: #fbbf24; }
 .swatch-rain { background: rgba(96, 165, 250, 0.65); height: 8px; }
+.swatch-rain-mm { background: rgba(56, 189, 248, 0.85); width: 5px; height: 10px; }
 
 .forecast-svg {
   width: 100%;
