@@ -46,6 +46,7 @@ fn App() -> impl IntoView {
     let (regression, set_regression) = signal(Option::<RegressionSummary>::None);
     let (status_msg, set_status_msg) = signal(Option::<String>::None);
     let (geo_busy, set_geo_busy) = signal(false);
+    let (menu_open, set_menu_open) = signal(false);
 
     let init_client = client.clone();
     Effect::new(move |_| {
@@ -151,7 +152,7 @@ fn App() -> impl IntoView {
                         <p>"Australian Multi-Source Consensus Weather"</p>
                     </div>
                 </div>
-                <nav class="nav-tabs">
+                <nav class="nav-tabs" aria-label="Primary">
                     <button
                         class=move || if active_tab.get() == ActiveTab::Weather { "tab-btn active" } else { "tab-btn" }
                         on:click=move |_| set_active_tab.set(ActiveTab::Weather)
@@ -165,7 +166,67 @@ fn App() -> impl IntoView {
                         "Model Accuracy (7d)"
                     </button>
                 </nav>
+                <button
+                    class="hamburger-btn"
+                    type="button"
+                    aria-label="Open navigation menu"
+                    aria-expanded=move || if menu_open.get() { "true" } else { "false" }
+                    on:click=move |_| set_menu_open.update(|open| *open = !*open)
+                >
+                    <span class="hamburger-lines" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
+                </button>
             </header>
+
+            {move || if menu_open.get() {
+                view! {
+                    <div class="mobile-drawer-backdrop" on:click=move |_| set_menu_open.set(false)>
+                        <aside
+                            class="mobile-drawer"
+                            aria-label="Mobile Navigation"
+                            on:click=move |ev| ev.stop_propagation()
+                        >
+                            <div class="mobile-drawer-header">
+                                <span class="mobile-drawer-title">"Menu"</span>
+                                <button
+                                    class="drawer-close-btn"
+                                    type="button"
+                                    aria-label="Close navigation menu"
+                                    on:click=move |_| set_menu_open.set(false)
+                                >
+                                    "×"
+                                </button>
+                            </div>
+                            <nav class="mobile-drawer-nav">
+                                <button
+                                    class=move || if active_tab.get() == ActiveTab::Weather { "drawer-nav-btn active" } else { "drawer-nav-btn" }
+                                    on:click=move |_| {
+                                        set_active_tab.set(ActiveTab::Weather);
+                                        set_menu_open.set(false);
+                                    }
+                                >
+                                    "Forecast"
+                                </button>
+                                <button
+                                    class=move || if active_tab.get() == ActiveTab::Regression { "drawer-nav-btn active" } else { "drawer-nav-btn" }
+                                    on:click=move |_| {
+                                        set_active_tab.set(ActiveTab::Regression);
+                                        set_menu_open.set(false);
+                                    }
+                                >
+                                    "Model Accuracy (7d)"
+                                </button>
+                            </nav>
+                        </aside>
+                    </div>
+                }
+                .into_any()
+            } else {
+                view! { <div /> }.into_any()
+            }}
 
             {move || match active_tab.get() {
                 ActiveTab::Regression => view! {
@@ -189,7 +250,12 @@ fn App() -> impl IntoView {
                                     disabled=move || geo_busy.get()
                                     on:click=on_use_my_location
                                 >
-                                    {move || if geo_busy.get() { "Locating..." } else { "Use My Location" }}
+                                    <span class="geo-label-full">
+                                        {move || if geo_busy.get() { "Locating..." } else { "Use My Location" }}
+                                    </span>
+                                    <span class="geo-label-short">
+                                        {move || if geo_busy.get() { "..." } else { "Locate" }}
+                                    </span>
                                 </button>
                             </div>
 
