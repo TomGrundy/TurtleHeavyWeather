@@ -429,15 +429,11 @@ impl WeatherStore {
         )?;
         tx.commit()?;
 
-        let total_deleted =
-            forecast_snapshots_deleted + aggregate_snapshots_deleted + observations_deleted;
-        if total_deleted > 0 {
-            if let Err(err) = self
-                .conn
-                .execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA incremental_vacuum(64);")
-            {
-                debug!(error = %err, "non-fatal wal_checkpoint/vacuum skipped");
-            }
+        if let Err(err) = self
+            .conn
+            .execute_batch("PRAGMA wal_checkpoint(TRUNCATE); VACUUM;")
+        {
+            debug!(error = %err, "non-fatal wal_checkpoint/vacuum skipped");
         }
 
         Ok(PruneStats {

@@ -35,7 +35,11 @@ jobs:
           mkdir -p state
           if git ls-remote --exit-code --heads origin data-state >/dev/null 2>&1; then
             git fetch origin data-state --depth=1
-            git show origin/data-state:weather.db > state/weather.db || rm -f state/weather.db
+            if git cat-file -e origin/data-state:weather.db.gz 2>/dev/null; then
+              git show origin/data-state:weather.db.gz | gzip -d > state/weather.db || rm -f state/weather.db
+            elif git cat-file -e origin/data-state:weather.db 2>/dev/null; then
+              git show origin/data-state:weather.db > state/weather.db || rm -f state/weather.db
+            fi
           fi
 
       - name: Run thw-collector (60-min sync, 7-day prune, regression, static JSON export)
@@ -54,16 +58,16 @@ jobs:
             --locations-index data/locations_index.json \
             --retention-days 7
 
-      - name: Persist rolling 7-day state to single-commit orphan branch (no main bloat)
+      - name: Persist compressed rolling 7-day state to single-commit orphan branch (no main bloat)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           WORKTREE_DIR=$(mktemp -d)
           git worktree add --orphan -B data-state "$WORKTREE_DIR"
-          cp state/weather.db "$WORKTREE_DIR/weather.db"
+          gzip -9 -c state/weather.db > "$WORKTREE_DIR/weather.db.gz"
           (
             cd "$WORKTREE_DIR"
-            git add weather.db
+            git add weather.db.gz
             git commit -m "chore(data): rolling 7-day weather state $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push --force origin data-state
           )
