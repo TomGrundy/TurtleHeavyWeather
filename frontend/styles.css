@@ -314,12 +314,22 @@ body {
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
-  padding: 0.45rem 0.7rem;
+  min-height: 2.35rem;
+  padding: 0.4rem 0.7rem;
   margin-bottom: 0.45rem;
   border-radius: 8px;
-  background: rgba(30, 30, 35, 0.96);
-  border: 1px solid rgba(156, 163, 175, 0.4);
+  background: rgba(30, 30, 35, 0.75);
+  border: 1px solid rgba(156, 163, 175, 0.25);
   font-size: 0.85rem;
+}
+
+.chart-tooltip-active {
+  background: rgba(30, 30, 35, 0.96);
+  border-color: rgba(156, 163, 175, 0.5);
+}
+
+.chart-tooltip-placeholder {
+  color: var(--muted);
 }
 
 .chart-grid {

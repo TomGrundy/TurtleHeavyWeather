@@ -216,31 +216,38 @@ pub fn InteractiveForecastChart(
                 </div>
             </div>
 
-            {move || selected_idx.get().and_then(|idx| {
+            {move || match selected_idx.get().and_then(|idx| {
                 points_stored.with_value(|list| list.get(idx).cloned())
-            }).map(|pt| {
-                let sun_note = match (pt.feels_like_c, pt.feels_like_sun_c) {
-                    (Some(fl), Some(sun)) if sun > fl + 0.3 => format!(" (Sun ~{sun:.1}°C)"),
-                    _ => String::new(),
-                };
-                view! {
-                    <div class="chart-tooltip-bar">
-                        <strong>{format_local_hhmm(pt.valid_at)}</strong>
-                        {pt.feels_like_c.map(|fl| view! {
-                            <span>{format!("Feels Like: {fl:.1}°C{sun_note}")}</span>
-                        })}
-                        {pt.temp_c.map(|t| view! {
-                            <span>{format!("Actual Temp: {t:.1}°C")}</span>
-                        })}
-                        {pt.rain_prob_pct.map(|rp| {
-                            let mm_part = pt.rain_mm.map(|mm| format!(" ({mm:.1} mm)")).unwrap_or_default();
-                            view! {
-                                <span>{format!("Rain: {rp:.0}%{mm_part}")}</span>
-                            }
-                        })}
-                    </div>
+            }) {
+                Some(pt) => {
+                    let sun_note = match (pt.feels_like_c, pt.feels_like_sun_c) {
+                        (Some(fl), Some(sun)) if sun > fl + 0.3 => format!(" (Sun ~{sun:.1}°C)"),
+                        _ => String::new(),
+                    };
+                    view! {
+                        <div class="chart-tooltip-bar chart-tooltip-active">
+                            <strong>{format_local_hhmm(pt.valid_at)}</strong>
+                            {pt.feels_like_c.map(|fl| view! {
+                                <span>{format!("Feels Like: {fl:.1}°C{sun_note}")}</span>
+                            })}
+                            {pt.temp_c.map(|t| view! {
+                                <span>{format!("Actual Temp: {t:.1}°C")}</span>
+                            })}
+                            {pt.rain_prob_pct.map(|rp| {
+                                let mm_part = pt.rain_mm.map(|mm| format!(" ({mm:.1} mm)")).unwrap_or_default();
+                                view! {
+                                    <span>{format!("Rain: {rp:.0}%{mm_part}")}</span>
+                                }
+                            })}
+                        </div>
+                    }.into_any()
                 }
-            })}
+                None => view! {
+                    <div class="chart-tooltip-bar chart-tooltip-placeholder">
+                        <span>"Hover or tap the chart to inspect hourly values"</span>
+                    </div>
+                }.into_any(),
+            }}
 
             <svg
                 class="forecast-svg"
