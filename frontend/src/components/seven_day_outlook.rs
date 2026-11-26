@@ -1,48 +1,42 @@
-use chrono::Duration;
+use std::collections::BTreeMap;
+
 use leptos::prelude::*;
 use thw_core::HourlyEstimate;
 
 use crate::components::{ChartPoint, InteractiveForecastChart};
-use crate::time::{format_local_short, now_utc};
+use crate::time::{local_date_key, local_weekday_name, now_utc};
 
 #[component]
 pub fn SevenDayOutlook(hourly: Vec<HourlyEstimate>) -> impl IntoView {
-    let cutoff = now_utc() - Duration::minutes(30);
-    let upcoming: Vec<HourlyEstimate> = {
-        let filtered: Vec<_> = hourly
-            .iter()
-            .filter(|h| h.valid_at >= cutoff)
-            .cloned()
-            .collect();
-        if filtered.len() >= 24 {
-            filtered
-        } else {
-            hourly
-        }
-    };
+    let today_key = local_date_key(now_utc());
 
-    // Skip the first 24h (shown in the primary BestEstimateCard), then group
-    // the following 6 days into 24-hour collapsible periods.
-    let later: Vec<HourlyEstimate> = upcoming.into_iter().skip(24).collect();
-    if later.is_empty() {
+    // Group hourly estimates into midnight-to-midnight local calendar days,
+    // skipping today (already covered by the top 24-hour hero section).
+    let mut by_day: BTreeMap<(i32, u32, u32), Vec<HourlyEstimate>> = BTreeMap::new();
+    for pt in hourly {
+        let key = local_date_key(pt.valid_at);
+        if key > today_key {
+            by_day.entry(key).or_default().push(pt);
+        }
+    }
+
+    let day_chunks: Vec<(String, Vec<HourlyEstimate>)> = by_day
+        .into_values()
+        .take(6)
+        .filter_map(|chunk| {
+            let label = chunk.first().map(|h| local_weekday_name(h.valid_at))?;
+            Some((label, chunk))
+        })
+        .collect();
+
+    if day_chunks.is_empty() {
         return view! { <div /> }.into_any();
     }
 
-    let day_chunks: Vec<(usize, Vec<HourlyEstimate>)> = later
-        .chunks(24)
-        .take(6)
-        .enumerate()
-        .map(|(idx, chunk)| (idx + 2, chunk.to_vec()))
-        .collect();
-
     view! {
         <section class="sources-section">
-            <h2>"Next 6 Days (24-Hour Outlook)"</h2>
-            {day_chunks.into_iter().map(|(day_num, chunk)| {
-                let first_lbl = chunk.first().map(|h| format_local_short(h.valid_at)).unwrap_or_default();
-                let last_lbl = chunk.last().map(|h| format_local_short(h.valid_at)).unwrap_or_default();
-                let header = format!("Day {day_num}: {first_lbl} – {last_lbl}");
-
+            <h2>"Next 6 Days"</h2>
+            {day_chunks.into_iter().map(|(weekday, chunk)| {
                 let fl_min = chunk.iter().map(|h| h.feels_like_c).fold(f64::INFINITY, f64::min);
                 let fl_max = chunk.iter().map(|h| h.feels_like_c).fold(f64::NEG_INFINITY, f64::max);
                 let t_min = chunk.iter().map(|h| h.temp_c).fold(f64::INFINITY, f64::min);
@@ -65,7 +59,7 @@ pub fn SevenDayOutlook(hourly: Vec<HourlyEstimate>) -> impl IntoView {
                 view! {
                     <details class="source-accordion">
                         <summary>
-                            <span>{header}</span>
+                            <span>{weekday}</span>
                             <span class="source-summary-stats">
                                 <span>{format!("Feels {:.0}–{:.0}°C", fl_min, fl_max)}</span>
                                 <span>{format!("Temp {:.0}–{:.0}°C", t_min, t_max)}</span>
@@ -75,7 +69,7 @@ pub fn SevenDayOutlook(hourly: Vec<HourlyEstimate>) -> impl IntoView {
                         <div class="source-body">
                             <InteractiveForecastChart
                                 points=chart_points
-                                title="24-Hour Period Forecast (Hover or Tap)"
+                                title="Midnight–Midnight Forecast (Hover or Tap)"
                             />
                         </div>
                     </details>

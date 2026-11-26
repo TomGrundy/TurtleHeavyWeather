@@ -36,6 +36,48 @@ fn to_12h(hour24: u32) -> (u32, &'static str) {
     (h12, ampm)
 }
 
+#[cfg(target_arch = "wasm32")]
+fn weekday_name(day_idx: u32) -> &'static str {
+    match day_idx {
+        0 => "Sunday",
+        1 => "Monday",
+        2 => "Tuesday",
+        3 => "Wednesday",
+        4 => "Thursday",
+        5 => "Friday",
+        6 => "Saturday",
+        _ => "",
+    }
+}
+
+/// Returns `(year, month_1_to_12, day_1_to_31)` in the browser's local timezone.
+pub fn local_date_key(dt: DateTime<Utc>) -> (i32, u32, u32) {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let d = js_date(dt);
+        (d.get_full_year() as i32, d.get_month() + 1, d.get_date())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use chrono::Datelike;
+        let l = dt.with_timezone(&chrono::Local);
+        (l.year(), l.month(), l.day())
+    }
+}
+
+/// Returns the full weekday name (e.g. `"Friday"`) in the browser's local timezone.
+pub fn local_weekday_name(dt: DateTime<Utc>) -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let d = js_date(dt);
+        weekday_name(d.get_day()).to_string()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        dt.with_timezone(&chrono::Local).format("%A").to_string()
+    }
+}
+
 /// Returns current UTC time using `js_sys::Date::now()` on wasm32 or `Utc::now()` on native.
 pub fn now_utc() -> DateTime<Utc> {
     #[cfg(target_arch = "wasm32")]
