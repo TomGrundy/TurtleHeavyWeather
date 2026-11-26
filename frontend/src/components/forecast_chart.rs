@@ -1,8 +1,12 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use chrono::{DateTime, Utc};
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::time::format_local_hhmm;
+
+static NEXT_GRAD_ID: AtomicUsize = AtomicUsize::new(1);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChartPoint {
@@ -15,14 +19,23 @@ pub struct ChartPoint {
 }
 
 /// Builds a smooth cubic Bezier SVG path through `(x, y)` points using
-/// Catmull-Rom to cubic Bezier control-point conversion.
-pub fn build_smooth_curve_path(pts: &[(f64, f64)]) -> String {
+/// Catmull-Rom to cubic Bezier control-point conversion, optionally clamping
+/// control-point Y values within `[min_y, max_y]` so sharp 0%→100% transitions
+/// never overshoot past the chart bounds.
+pub fn build_smooth_curve_path_clamped(pts: &[(f64, f64)], y_bounds: Option<(f64, f64)>) -> String {
     if pts.is_empty() {
         return String::new();
     }
     if pts.len() == 1 {
         return format!("M {:.1} {:.1}", pts[0].0, pts[0].1);
     }
+
+    let clamp_y = |y: f64| -> f64 {
+        match y_bounds {
+            Some((lo, hi)) => y.clamp(lo, hi),
+            None => y,
+        }
+    };
 
     let mut d = format!("M {:.1} {:.1}", pts[0].0, pts[0].1);
     for i in 0..pts.len() - 1 {
@@ -36,9 +49,9 @@ pub fn build_smooth_curve_path(pts: &[(f64, f64)]) -> String {
         };
 
         let c1x = p1.0 + (p2.0 - p0.0) / 6.0;
-        let c1y = p1.1 + (p2.1 - p0.1) / 6.0;
+        let c1y = clamp_y(p1.1 + (p2.1 - p0.1) / 6.0);
         let c2x = p2.0 - (p3.0 - p1.0) / 6.0;
-        let c2y = p2.1 - (p3.1 - p1.1) / 6.0;
+        let c2y = clamp_y(p2.1 - (p3.1 - p1.1) / 6.0);
 
         d.push_str(&format!(
             " C {:.1} {:.1}, {:.1} {:.1}, {:.1} {:.1}",
@@ -48,12 +61,24 @@ pub fn build_smooth_curve_path(pts: &[(f64, f64)]) -> String {
     d
 }
 
+pub fn build_smooth_curve_path(pts: &[(f64, f64)]) -> String {
+    build_smooth_curve_path_clamped(pts, None)
+}
+
 /// Builds a closed SVG area path from the smooth curve down to `baseline_y`.
 pub fn build_area_path(pts: &[(f64, f64)], baseline_y: f64) -> String {
+    build_area_path_clamped(pts, baseline_y, None)
+}
+
+pub fn build_area_path_clamped(
+    pts: &[(f64, f64)],
+    baseline_y: f64,
+    y_bounds: Option<(f64, f64)>,
+) -> String {
     if pts.is_empty() {
         return String::new();
     }
-    let mut d = build_smooth_curve_path(pts);
+    let mut d = build_smooth_curve_path_clamped(pts, y_bounds);
     let last_x = pts[pts.len() - 1].0;
     let first_x = pts[0].0;
     d.push_str(&format!(
@@ -153,10 +178,16 @@ pub fn InteractiveForecastChart(
         Vec::new()
     };
 
-    let rain_area_d = build_area_path(&rain_pts, bottom_y);
-    let rain_line_d = build_smooth_curve_path(&rain_pts);
-    let temp_line_d = build_smooth_curve_path(&temp_pts);
-    let feels_line_d = build_smooth_curve_path(&feels_pts);
+    let grad_id = format!(
+        "rainAreaGrad-{}",
+        NEXT_GRAD_ID.fetch_add(1, Ordering::Relaxed)
+    );
+    let grad_fill = format!("url(#{grad_id})");
+    let y_bounds = Some((pad_t, bottom_y));
+    let rain_area_d = build_area_path_clamped(&rain_pts, bottom_y, y_bounds);
+    let rain_line_d = build_smooth_curve_path_clamped(&rain_pts, y_bounds);
+    let temp_line_d = build_smooth_curve_path_clamped(&temp_pts, y_bounds);
+    let feels_line_d = build_smooth_curve_path_clamped(&feels_pts, y_bounds);
 
     let y_mid_t = (t_min + t_max) / 2.0;
     let temp_ticks = if has_temp || has_feels {
@@ -273,7 +304,7 @@ pub fn InteractiveForecastChart(
                 }
             >
                 <defs>
-                    <linearGradient id="rainAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id=grad_id x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stop-color="rgba(96, 165, 250, 0.42)" />
                         <stop offset="100%" stop-color="rgba(96, 165, 250, 0.06)" />
                     </linearGradient>
@@ -285,7 +316,7 @@ pub fn InteractiveForecastChart(
 
                 {has_rain.then(|| view! {
                     <g>
-                        <path d=rain_area_d fill="url(#rainAreaGrad)" />
+                        <path d=rain_area_d fill=grad_fill />
                         <path d=rain_line_d fill="none" stroke="rgba(96, 165, 250, 0.7)" stroke-width="1.5" />
                     </g>
                 })}
