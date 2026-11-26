@@ -217,7 +217,7 @@ pub fn RainRadarPanel(lat: f64, lon: f64, location_name: String) -> impl IntoVie
                             let tx = (grid.cx + dx).rem_euclid(tile_max);
                             let ty = (grid.cy + dy).clamp(0, tile_max - 1);
                             let base_url = format!(
-                                "https://basemaps.cartocdn.com/dark_all/{z}/{tx}/{ty}.png"
+                                "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{ty}/{tx}"
                             );
                             let radar_url = format!(
                                 "{host}{frame_path}/256/{z}/{tx}/{ty}/2/1_1.png"
