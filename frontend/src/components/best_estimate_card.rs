@@ -30,6 +30,10 @@ fn uv_badge_class(index: f64) -> &'static str {
     }
 }
 
+fn format_spread(min_c: f64, max_c: f64) -> String {
+    format!("Spread: {min_c:.1}° — {max_c:.1}°")
+}
+
 fn confidence_label(conf: ConfidenceLevel) -> &'static str {
     match conf {
         ConfidenceLevel::High => "High agreement",
@@ -56,16 +60,7 @@ pub fn BestEstimateCard(
         format_local_short(bundle.generated_at)
     );
 
-    let sun_sub = est
-        .feels_like_sun_c
-        .filter(|s| *s > est.feels_like_c + 0.3)
-        .map(|s| format!("In direct sun: ~{s:.1}°C"))
-        .unwrap_or_else(|| {
-            format!(
-                "Spread: {:.1}° .. {:.1}°",
-                est.spread.feels_like_min_c, est.spread.feels_like_max_c
-            )
-        });
+    let sun_boost = est.feels_like_sun_c.filter(|s| *s > est.feels_like_c + 0.3);
 
     let cutoff = now_utc() - Duration::minutes(30);
     let upcoming: Vec<_> = {
@@ -110,7 +105,18 @@ pub fn BestEstimateCard(
                 <div class="metric-box">
                     <div class="metric-label">"Feels Like"</div>
                     <div class="metric-value">{format!("{:.1}°C", est.feels_like_c)}</div>
-                    <div class="metric-sub">{sun_sub}</div>
+                    {match sun_boost {
+                        Some(s) => view! {
+                            <div class="metric-sub sun-inline">
+                                <span class="sun-badge">{format!("In direct sun: ~{s:.1}°C")}</span>
+                            </div>
+                        }.into_any(),
+                        None => view! {
+                            <div class="metric-sub">
+                                {format_spread(est.spread.feels_like_min_c, est.spread.feels_like_max_c)}
+                            </div>
+                        }.into_any(),
+                    }}
                     {est.uv.as_ref().map(|uv| {
                         let badge_cls = uv_badge_class(uv.index);
                         view! {
@@ -130,7 +136,7 @@ pub fn BestEstimateCard(
                     <div class="metric-label">"Temperature"</div>
                     <div class="metric-value">{format!("{:.1}°C", est.temp_c)}</div>
                     <div class="metric-sub">
-                        {format!("Spread: {:.1}° .. {:.1}°", est.spread.temp_min_c, est.spread.temp_max_c)}
+                        {format_spread(est.spread.temp_min_c, est.spread.temp_max_c)}
                     </div>
                 </div>
 
