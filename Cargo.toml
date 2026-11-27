@@ -23,7 +23,7 @@ console_error_panic_hook = "0.1"
 gloo-net = "0.6"
 js-sys = "0.3"
 leptos = { version = "0.8", features = ["csr"] }
-quick-xml = "0.37"
+quick-xml = "0.42"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
 scraper = "0.21"
